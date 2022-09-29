@@ -2,15 +2,26 @@ package com.capstone.breathdatacollector;
 
 import android.content.Context;
 import android.hardware.Sensor;
+import android.media.AudioManager;
+import android.media.AudioRecord;
+import android.media.MediaRecorder;
+
+import java.time.LocalDateTime;
 
 public class SensorManager {
-
+    private static final String TAG = "SENSOR_MANAGER";
     private Context context;
 
     private static SensorManager instance;
-    private Sensor accSensor;
+    private Sensor accSensor, stepSensor;
 
-    private SensorManager(){}
+    private AudioRecord audioSensor;
+
+    private BluetoothHelper bluetoothHelper;
+
+    private SensorManager(){
+        bluetoothHelper = BluetoothHelper.getInstance();
+    }
 
     public static SensorManager getInstance(){
         if(instance == null){
@@ -23,6 +34,7 @@ public class SensorManager {
         this.context = context;
 
         setSensors();
+        setMic();
     }
 
     private void setSensors(){
@@ -30,6 +42,14 @@ public class SensorManager {
 
         accSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 
-        sensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR); // TODO: add permission ACTIVITY_RECOGNITION
+//        sensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR); // TODO: add permission ACTIVITY_RECOGNITION
+    }
+
+    private void setMic(){
+        AudioManager audioManager = (AudioManager)this.context.getSystemService(Context.AUDIO_SERVICE);
+
+        if(bluetoothHelper.startBluetoothHeadset(context)){
+            audioManager.startBluetoothSco();
+        }
     }
 }
