@@ -4,7 +4,6 @@ import android.Manifest;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.hardware.SensorManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -21,6 +20,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Observer;
 
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.time.LocalDate;
+
 public class MainActivity extends AppCompatActivity {
 
     public static MutableLiveData<Boolean> isCaliEnd = new MutableLiveData<Boolean>(true);
@@ -30,8 +34,10 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        SensorHelper sensorManager = new SensorHelper(MainActivity.this);
+
         if(this.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED){
-             ActivityResultLauncher<String> permissionLauncher = this.registerForActivityResult(new ActivityResultContracts.RequestPermission(), (isGranted) -> {
+            ActivityResultLauncher<String> permissionLauncher = this.registerForActivityResult(new ActivityResultContracts.RequestPermission(), (isGranted) -> {
                 if (!isGranted) {
                     new AlertDialog.Builder(this.getApplicationContext())
                             .setTitle("저장소 접근 권한")
@@ -54,17 +60,45 @@ public class MainActivity extends AppCompatActivity {
                 permissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE);
             }
         }
-        //데이터를 파일에 저장
 
+
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE)
+                .setType("text/plain");
+        String fileName = LocalDate.now().toString() + ".txt";
+        intent.putExtra(Intent.EXTRA_TITLE, fileName);
+
+        //데이터를 파일에 저장
+        ActivityResultLauncher<Intent> mStartForResult = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    //result.getResultCode()를 통하여 결과값 확인
+                    if(result.getResultCode() == RESULT_OK) {
+                        BufferedOutputStream bs = null;
+                        try{
+                            bs = new BufferedOutputStream(new FileOutputStream(fileName));
+                            String str = new String();//수현이 데이터에서 파일에 적을 문자열 받아오기
+                            bs.write(str.getBytes());
+                            bs.close();
+                        } catch (IOException e) {
+                            e.getStackTrace();
+                        }
+                    }
+                    if(result.getResultCode() == RESULT_CANCELED){
+                    }
+                }
+        );
+
+
+        mStartForResult.launch(intent);
 
         Button btnDataCollect = findViewById(R.id.button1);
         Button btnCalibrate = findViewById(R.id.button2);
         btnDataCollect.setOnClickListener(new View.OnClickListener(){
             @Override public void onClick(View view){
-                boolean isBluetoothOn = BluetoothHelper.checkBluetoothEnabled(this);
+                boolean isBluetoothOn = BluetoothHelper.checkBluetoothEnabled(MainActivity.this);
                 if (isBluetoothOn){
                     isDCEnd.setValue(false);
-                    SensorHelper sensorManager = new SensorHelper(this);
                     //데이터 몹는 메소드 call 추가
 
                     new CountDownTimer(60000, 1000) {
@@ -87,10 +121,9 @@ public class MainActivity extends AppCompatActivity {
         btnCalibrate.setOnClickListener((new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                boolean isBluetoothOn = BluetoothHelper.checkBluetoothEnabled(this);
+                boolean isBluetoothOn = BluetoothHelper.checkBluetoothEnabled(MainActivity.this);
                 if (isBluetoothOn){
                     isCaliEnd.setValue(false);
-                    SensorHelper sensorManager = new SensorHelper(this);
                     //데이터 몹는 메소드 call 추가
                 }
                 else{
