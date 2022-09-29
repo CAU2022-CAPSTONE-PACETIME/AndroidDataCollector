@@ -83,15 +83,13 @@ public class BluetoothHelper {
 
         ActivityResultCallback<Boolean> arc;
 
-
-
         if(activity.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED){
-            arc = (isGranted) -> {
-                    if (!isGranted) {
-                        new AlertDialog.Builder(activity.getApplicationContext())
-                                .setTitle("블루투스 접근 권한")
-                                .setMessage("앱을 사용하시려면, 블루투스 권한을 허용해 주세요.")
-                                .setPositiveButton("확인", (DialogInterface dialog, int which)->{
+            permissionLauncher = activity.registerForActivityResult(new ActivityResultContracts.RequestPermission(), (isGranted) -> {
+                if (!isGranted) {
+                    new AlertDialog.Builder(activity.getApplicationContext())
+                            .setTitle("블루투스 접근 권한")
+                            .setMessage("앱을 사용하시려면, 블루투스 권한을 허용해 주세요.")
+                            .setPositiveButton("확인", (DialogInterface dialog, int which)->{
                                         Intent intent = new Intent();
                                         intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
                                         Uri uri = Uri.fromParts("package",
@@ -100,40 +98,17 @@ public class BluetoothHelper {
                                         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                                         activity.startActivity(intent);
                                     }
-                                )
-                                .create()
-                                .show();
-                    }
-                };
-            permissionLauncher = activity.registerForActivityResult(new ActivityResultContracts.RequestPermission(), arc);
+                            )
+                            .create()
+                            .show();
+                }
+            });
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 permissionLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT);
             }
         }
 
-        if(activity.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED){
-            arc = (isGranted) ->{
-                    if (!isGranted) {
-                        new AlertDialog.Builder(activity.getApplicationContext())
-                                .setTitle("녹음 권한")
-                                .setMessage("앱을 사용하시려면, 녹음 권한을 허용해 주세요.")
-                                .setPositiveButton("확인", (DialogInterface dialog, int which) -> {
-                                        Intent intent = new Intent();
-                                        intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                                        Uri uri = Uri.fromParts("package",
-                                                BuildConfig.APPLICATION_ID, null);
-                                        intent.setData(uri);
-                                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                                        activity.startActivity(intent);
-                                    }
-                                )
-                                .create()
-                                .show();
-                    }
-                };
-            permissionLauncher = activity.registerForActivityResult(new ActivityResultContracts.RequestPermission(), arc);
-            permissionLauncher.launch(Manifest.permission.RECORD_AUDIO);
-        }
+
 
         if (!instance.adapter.isEnabled()) {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
