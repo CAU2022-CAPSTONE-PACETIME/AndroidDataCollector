@@ -1,7 +1,9 @@
 package com.capstone.breathdatacollector;
 
+import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Button;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -13,14 +15,35 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        Button btnDataCollect = findViewById(R.id.button1);
+        Button btnCalibrate = findViewById(R.id.button2);
+        btnDataCollect.setOnClickListener(new View.OnClickListener(){
+            @Override public void onClick(View view){
+                boolean isBluetoothOn = BluetoothHelper.checkBluetoothEnabled(this);
+                if (isBluetoothOn){
+                    SensorManager sensorManager = SensorManager.getInstance();
+                    sensorManager.setContext(this);
+                    //데이터 몹는 메소드 call 추가
+                }
+                else{
+                    return;
+                }
+            }
+        });
+        btnCalibrate.setOnClickListener((new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                boolean isBluetoothOn = BluetoothHelper.checkBluetoothEnabled(this);
+                if (isBluetoothOn){
+                    SensorCalibrator sensorCalibrator = SensorCalibrator.getInstance();
+                    sensorCalibrator.setContext(this);
+                    //데이터 몹는 메소드 call 추가
+                }
+                else{
+                    return;
+                }
+            }
+        }));
 
     }
-    public void onButton1Clicked(View v) {
-        Toast.makeText(this, "저는 확인1이에요.", Toast.LENGTH_LONG).show(); // Toast는 간단한 메세지를 잠깐 보여주는 역할을 수행한다.
-    }
-
-    public void onButton2Clicked(View v) {
-        Toast.makeText(this, "저는 확인2이에요.", Toast.LENGTH_LONG).show(); // Toast는 간단한 메세지를 잠깐 보여주는 역할을 수행한다.
-    }
-
 }
