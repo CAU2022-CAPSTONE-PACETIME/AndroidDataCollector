@@ -94,24 +94,32 @@ public class MainActivity extends AppCompatActivity {
 
         Button btnDataCollect = findViewById(R.id.button1);
         Button btnCalibrate = findViewById(R.id.button2);
+        CountDownTimer countDownTimer = new CountDownTimer(60000, 1000) {
+            public void onTick(long millisUntilFinished) {
+                TextView time = findViewById(R.id.time);
+                time.setText("seconds remaining: " +(millisUntilFinished / 1000));
+            }
+            public void onFinish() {
+                //stop collecting
+                TextView time = findViewById(R.id.time);
+                time.setText("Collecting time: 60s");
+            }
+        };
         btnDataCollect.setOnClickListener(new View.OnClickListener(){
             @Override public void onClick(View view){
                 boolean isBluetoothOn = BluetoothHelper.checkBluetoothEnabled(MainActivity.this);
                 if (isBluetoothOn){
-                    isDCEnd.setValue(false);
-                    //데이터 몹는 메소드 call 추가
 
-                    new CountDownTimer(60000, 1000) {
-                        public void onTick(long millisUntilFinished) {
-                            TextView time = findViewById(R.id.time);
-                            time.setText("seconds remaining: " +(millisUntilFinished / 1000));
-                        }
-                        public void onFinish() {
-                            //stop collecting
-                            TextView time = findViewById(R.id.time);
-                            time.setText("Collecting time: 60s");
-                        }
-                    }.start();
+                    if(isDCEnd.getValue()){
+                        isDCEnd.setValue(false);
+                        //데이터 모으는 메소드 call 추가
+                        countDownTimer.start();
+                    }
+                    else{
+                        isDCEnd.setValue(true);
+                        //데이터 수집 중지 메소드 call 추가
+                        countDownTimer.cancel();
+                    }
                 }
                 else{
                     return;
@@ -135,11 +143,18 @@ public class MainActivity extends AppCompatActivity {
         isCaliEnd.observe(this, new Observer<Boolean>() {
             public void onChanged(Boolean caliState){
                 btnCalibrate.setEnabled(caliState);
+                btnDataCollect.setEnabled(caliState);
             }
         });
         isDCEnd.observe(this, new Observer<Boolean>() {
             public void onChanged(Boolean DCState){
-                btnDataCollect.setEnabled(DCState);
+                btnCalibrate.setEnabled(DCState);
+                if(DCState){
+                    btnDataCollect.setText("STOP COLLECTING");
+                }
+                else{
+                    btnDataCollect.setText("START COLLECTING DATA");
+                }
             }
         });
 
