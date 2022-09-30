@@ -3,9 +3,11 @@ package com.capstone.breathdatacollector;
 import static android.app.Activity.RESULT_OK;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothHeadset;
 import android.bluetooth.BluetoothProfile;
 import android.content.BroadcastReceiver;
@@ -17,6 +19,7 @@ import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
 import android.widget.Toast;
@@ -40,28 +43,12 @@ public class BluetoothHelper {
     private Boolean isEnabled = false;
 
     private BluetoothProfile.ServiceListener profileListener;
-
+    private BluetoothDevice myDevice;
     private static BluetoothHelper instance;
 
     private BluetoothHelper() {
+        Log.d(TAG, "Create Bluetooth Helper");
         adapter = BluetoothAdapter.getDefaultAdapter();
-        profileListener = new BluetoothProfile.ServiceListener() {
-            @Override
-            public void onServiceConnected(int profile, BluetoothProfile proxy) {
-                if (profile == BluetoothProfile.HEADSET) {
-                    Log.d(TAG, "Headset Connected");
-                    headset = (BluetoothHeadset) proxy;
-                }
-            }
-
-            @Override
-            public void onServiceDisconnected(int profile) {
-                if (profile == BluetoothProfile.HEADSET) {
-                    Log.d(TAG, "Headset Disconnected");
-                    headset = null;
-                }
-            }
-        };
     }
 
     public static BluetoothHelper getInstance(){
@@ -108,8 +95,6 @@ public class BluetoothHelper {
             }
         }
 
-
-
         if (!instance.adapter.isEnabled()) {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
                     .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -139,28 +124,113 @@ public class BluetoothHelper {
 
             return instance.adapter.isEnabled();
         }
+
         return true;
     }
 
+    @SuppressLint("MissingPermission")
     public boolean startBluetoothHeadset(Context context) {
         Log.d(TAG, "start Bluetooth Headset Method");
+
+        IntentFilter filter = new IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED);
+        filter.addAction(BluetoothHeadset.ACTION_AUDIO_STATE_CHANGED);
+        filter.addAction(BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED);
+
+        if(profileListener == null) {
+            profileListener = new BluetoothProfile.ServiceListener() {
+                @SuppressLint("MissingPermission")
+                @Override
+                public void onServiceConnected(int profile, BluetoothProfile proxy) {
+                    if (profile == BluetoothProfile.HEADSET) {
+                        Log.d(TAG, "Headset Connected");
+                        headset = (BluetoothHeadset) proxy;
+                        for (BluetoothDevice device : headset.getConnectedDevices()) {
+                            if (headset.isAudioConnected(device)) {
+                                myDevice = device;
+                            }
+                            Log.d(TAG, device.getName());
+                            Log.d(TAG, device.getAddress());
+                            Log.d(TAG, "Bluetooth HeadSet Service Connected");
+
+                        }
+                    }
+                }
+
+
+                @Override
+                public void onServiceDisconnected(int profile) {
+                    if (profile == BluetoothProfile.HEADSET) {
+                        Log.d(TAG, "Headset Disconnected");
+                        headset = null;
+                        myDevice = null;
+                    }
+                }
+            };
+
+            adapter.getProfileProxy(context, profileListener, BluetoothProfile.HEADSET);
+        }
+
 
         context.registerReceiver(new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                int state = intent.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, -1);
-                if(AudioManager.SCO_AUDIO_STATE_CONNECTED == state){
-                    Log.d(TAG, "onReceive, SCO_AUDIO_CONNECTED");
+                String action = intent.getAction();
+                Bundle extras = intent.getExtras();
+                int state = extras.getInt(BluetoothProfile.EXTRA_STATE);
+                int prevState = extras.getInt(BluetoothProfile.EXTRA_PREVIOUS_STATE);
+                BluetoothDevice device = extras.getParcelable(BluetoothDevice.EXTRA_DEVICE);
 
-                    Toast.makeText(context, "Bluetooth Headset Connected", Toast.LENGTH_SHORT).show();
-                    adapter.getProfileProxy(context, profileListener, BluetoothProfile.HEADSET);
-                    context.unregisterReceiver(this);
+                if (action.equals(BluetoothHeadset.ACTION_AUDIO_STATE_CHANGED)) {
+                    String stateStr = state == BluetoothHeadset.STATE_AUDIO_CONNECTED ? "AUDIO_CONNECTED"
+                            : state == BluetoothHeadset.STATE_AUDIO_CONNECTING ? "AUDIO_CONNECTING"
+                            : state == BluetoothHeadset.STATE_AUDIO_DISCONNECTED ? "AUDIO_DISCONNECTED"
+                            : "Unknown";
+                    String prevStateStr = prevState == BluetoothHeadset.STATE_AUDIO_CONNECTED ? "AUDIO_CONNECTED"
+                            : prevState == BluetoothHeadset.STATE_AUDIO_CONNECTING ? "AUDIO_CONNECTING"
+                            : prevState == BluetoothHeadset.STATE_AUDIO_DISCONNECTED ? "AUDIO_DISCONNECTED"
+                            : "Unknown";
+                    Log.d(TAG, "BluetoothHeadset.ACTION_AUDIO_STATE_CHANGED: EXTRA_DEVICE=" + device.getName() + " EXTRA_STATE=" + stateStr + " EXTRA_PREVIOUS_STATE=" + prevStateStr);
+                }
+                else if (action.equals(BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED)) {
+                    String stateStr = state == BluetoothHeadset.STATE_CONNECTED ? "CONNECTED"
+                            : state == BluetoothHeadset.STATE_CONNECTING ? "CONNECTING"
+                            : state == BluetoothHeadset.STATE_DISCONNECTED ? "DISCONNECTED"
+                            : state == BluetoothHeadset.STATE_DISCONNECTING ? "DISCONNECTING"
+                            : "Unknown";
+                    String prevStateStr = prevState == BluetoothHeadset.STATE_CONNECTED ? "CONNECTED"
+                            : prevState == BluetoothHeadset.STATE_CONNECTING ? "CONNECTING"
+                            : prevState == BluetoothHeadset.STATE_DISCONNECTED ? "DISCONNECTED"
+                            : prevState == BluetoothHeadset.STATE_DISCONNECTING ? "DISCONNECTING"
+                            : "Unknown";
+                    if(state == BluetoothHeadset.STATE_CONNECTED){
+                        myDevice = device;
+                        Toast.makeText(context, "Bluetooth Headset Connected", Toast.LENGTH_SHORT).show();
+                        context.unregisterReceiver(this);
+                    }
+
+                    Log.d(TAG, "BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED: EXTRA_DEVICE=" + device.getName() + " EXTRA_STATE=" + stateStr + " EXTRA_PREVIOUS_STATE=" + prevStateStr);
+                }
+
+                else if(AudioManager.SCO_AUDIO_STATE_CONNECTED == state){
+                    Log.d(TAG, "onReceive, SCO_AUDIO_CONNECTED");
                 }
             }
-        }, new IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED));
+        }, filter);
+
+        if(headset == null){
+            Log.d(TAG, "Failed By headset is null");
+            return false;
+        }
+
+        if(headset.getConnectedDevices() == null){
+            Log.d(TAG, "Failed By devices list is null");
+            return false;
+        }
 
         Log.d(TAG, "start Bluetooth Headset Method End");
-
+        if(headset.isAudioConnected(myDevice)){
+            Log.d(TAG, "Headset isn't audio connected");
+        }
         return true;
     }
 
