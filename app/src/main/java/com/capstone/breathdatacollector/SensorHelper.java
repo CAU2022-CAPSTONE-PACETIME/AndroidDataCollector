@@ -52,10 +52,31 @@ public class SensorHelper implements SensorEventListener {
     private List<float[]> gyroData;
     private List<Long> imuTimeStamp;
 
+    private ActivityResultLauncher<String> permissionLauncher;
+
     public SensorHelper(MainActivity activity) {
         this.activity = activity;
         this.context = activity.getApplicationContext();
         bluetoothHelper = BluetoothHelper.getInstance();
+        permissionLauncher = activity.registerForActivityResult(new ActivityResultContracts.RequestPermission(), (isGranted) -> {
+            if (!isGranted) {
+                new AlertDialog.Builder(activity.getApplicationContext())
+                        .setTitle("녹음 권한")
+                        .setMessage("앱을 사용하시려면, 녹음 권한을 허용해 주세요.")
+                        .setPositiveButton("확인", (DialogInterface dialog, int which) -> {
+                                    Intent intent = new Intent();
+                                    intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                                    Uri uri = Uri.fromParts("package",
+                                            BuildConfig.APPLICATION_ID, null);
+                                    intent.setData(uri);
+                                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                    activity.startActivity(intent);
+                                }
+                        )
+                        .create()
+                        .show();
+            }
+        });
     }
 
     private void setSensors() {
@@ -74,6 +95,7 @@ public class SensorHelper implements SensorEventListener {
 
         accData = new ArrayList<>();
         gyroData = new ArrayList<>();
+        imuTimeStamp = new ArrayList<>();
 
 //        stepSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER);
     }
@@ -88,7 +110,10 @@ public class SensorHelper implements SensorEventListener {
         AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         Log.d(TAG, "set Microphone");
 
-        if (bluetoothHelper.startBluetoothHeadset(context)) {
+        boolean isStartBtHeadset = bluetoothHelper.startBluetoothHeadset(context);
+        Log.d(TAG, "is Start Bt Headset: " + isStartBtHeadset);
+
+        if (isStartBtHeadset) {
             Log.d(TAG, "Start Bluetooth SCO");
             audioManager.startBluetoothSco();
 
@@ -97,7 +122,9 @@ public class SensorHelper implements SensorEventListener {
 
             Log.i("AUDIO_INFO", "Check Self Permission");
 
-            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+
+                permissionLauncher.launch(Manifest.permission.RECORD_AUDIO);
                 return;
             }
             audioSensor = new AudioRecord(MediaRecorder.AudioSource.MIC,
@@ -115,49 +142,23 @@ public class SensorHelper implements SensorEventListener {
             shortBuffer.position(0);
 
         }
+        else{
+            MainActivity.isCaliEnd.postValue(true);
+        }
     }
 
     public String getData() {
         return "";
     }
 
-    private boolean checkPermissions() {
-        ActivityResultLauncher<String> permissionLauncher;
-        ActivityResultCallback<Boolean> arc;
-
-        if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            arc = (isGranted) -> {
-                if (!isGranted) {
-                    new AlertDialog.Builder(activity.getApplicationContext())
-                            .setTitle("녹음 권한")
-                            .setMessage("앱을 사용하시려면, 녹음 권한을 허용해 주세요.")
-                            .setPositiveButton("확인", (DialogInterface dialog, int which) -> {
-                                        Intent intent = new Intent();
-                                        intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                                        Uri uri = Uri.fromParts("package",
-                                                BuildConfig.APPLICATION_ID, null);
-                                        intent.setData(uri);
-                                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                                        activity.startActivity(intent);
-                                    }
-                            )
-                            .create()
-                            .show();
-                }
-            };
-            permissionLauncher = activity.registerForActivityResult(new ActivityResultContracts.RequestPermission(), arc);
-            permissionLauncher.launch(Manifest.permission.RECORD_AUDIO);
-
-            return context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED;
-        }
-
-        return true;
-    }
-
     public void calibrate() {
         if (accSensor == null || gyroSensor == null)
             setSensors();
         setMic();
+
+        if(audioSensor == null){
+            return;
+        }
 
         Thread dataThread = new Thread(() -> {
             sensorManager.registerListener(this, accSensor, SensorManager.SENSOR_DELAY_NORMAL);
