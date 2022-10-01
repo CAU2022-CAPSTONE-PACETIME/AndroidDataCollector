@@ -23,16 +23,22 @@ import androidx.lifecycle.Observer;
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class MainActivity extends AppCompatActivity {
 
     public static MutableLiveData<Boolean> isCaliEnd = new MutableLiveData<Boolean>(true);
     public static MutableLiveData<Boolean> isDCEnd = new MutableLiveData<Boolean>(true);
+    //    public static MutableLiveData<Boolean> isCaliClicked = new MutableLiveData<Boolean>(false);
+//    public static MutableLiveData<Boolean> isDCClicked = new MutableLiveData<Boolean>(false);
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        boolean isBluetoothOn = BluetoothHelper.checkBluetoothEnabled(MainActivity.this); //블루투스가 켜져있는지 항상 확인할 수 있으면 좋을듯 livedata라든지 해서
+
 
         SensorHelper sensorManager = new SensorHelper(MainActivity.this);
 
@@ -65,7 +71,7 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE)
                 .setType("text/plain");
-        String fileName = LocalDate.now().toString() + ".txt";
+        String fileName = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy_MM_dd_HH:mm:ss")) + ".txt";
         intent.putExtra(Intent.EXTRA_TITLE, fileName);
 
         //데이터를 파일에 저장
@@ -107,9 +113,11 @@ public class MainActivity extends AppCompatActivity {
         };
         btnDataCollect.setOnClickListener(new View.OnClickListener(){
             @Override public void onClick(View view){
-                boolean isBluetoothOn = BluetoothHelper.checkBluetoothEnabled(MainActivity.this);
+//                isDCClicked.setValue(true);
+//                boolean isBluetoothOn = BluetoothHelper.checkBluetoothEnabled(MainActivity.this);
                 if (isBluetoothOn){
 
+//                if(true){ //임시로, 이거 지울거임
                     if(isDCEnd.getValue()){
                         isDCEnd.setValue(false);
                         //데이터 모으는 메소드 call 추가
@@ -129,34 +137,92 @@ public class MainActivity extends AppCompatActivity {
         btnCalibrate.setOnClickListener((new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                boolean isBluetoothOn = BluetoothHelper.checkBluetoothEnabled(MainActivity.this);
+                //click 하면 click 할 때 변하는 변수 추가
+//                isCaliClicked.setValue(true);
+//                boolean isBluetoothOn = BluetoothHelper.checkBluetoothEnabled(MainActivity.this);
                 if (isBluetoothOn){
-                    isCaliEnd.setValue(false);
-                    //데이터 몹는 메소드 call 추가
+//                if(true){ //임시로, 이거 지울거임
+                    if(isCaliEnd.getValue()){
+                        isCaliEnd.setValue(false);
+                        //데이터 모으는 메소드 call 추가
+                    }
+                    else{
+                        isCaliEnd.setValue(true);
+                        //데이터 수집 중지 메소드 call 추가
+                    }
                 }
                 else{
                     return;
                 }
-            }
-        }));
+            }}));
 
         isCaliEnd.observe(this, new Observer<Boolean>() {
             public void onChanged(Boolean caliState){
-                btnCalibrate.setEnabled(caliState);
                 btnDataCollect.setEnabled(caliState);
+                if(caliState){
+                    btnCalibrate.setText("START CALIBRATION");
+                }
+                else{
+                    btnCalibrate.setText("STOP CALIBRATION");
+                }
             }
         });
         isDCEnd.observe(this, new Observer<Boolean>() {
             public void onChanged(Boolean DCState){
                 btnCalibrate.setEnabled(DCState);
                 if(DCState){
-                    btnDataCollect.setText("STOP COLLECTING");
+                    btnDataCollect.setText("START COLLECTING DATA");
+                    TextView time = findViewById(R.id.time);
+                    time.setText("Collecting time: 60s");
                 }
                 else{
-                    btnDataCollect.setText("START COLLECTING DATA");
+                    btnDataCollect.setText("STOP COLLECTING");
                 }
             }
         });
-
+//        isCaliClicked.observe(this, new Observer<Boolean>() {
+//            @Override
+//            public void onChanged(Boolean caliClickedState) {
+//                if(caliClickedState){
+//                    boolean isBluetoothOn = BluetoothHelper.checkBluetoothEnabled(MainActivity.this);
+//                    if (isBluetoothOn){
+//                        if(isCaliEnd.getValue()){
+//                            isCaliEnd.setValue(false);
+//                            //데이터 모으는 메소드 call 추가
+//                        }
+//                        else{
+//                            isCaliEnd.setValue(true);
+//                            //데이터 수집 중지 메소드 call 추가
+//                        }
+//                    }
+//                    else{
+//                        return;
+//                    }
+//                    isCaliClicked.setValue(false);
+//                }
+//            }
+//        });
+//        isDCClicked.observe(this, new Observer<Boolean>() {
+//            @Override
+//            public void onChanged(Boolean DCClickedState) {
+//                if(DCClickedState){
+//                    boolean isBluetoothOn = BluetoothHelper.checkBluetoothEnabled(MainActivity.this);
+//                    if (isBluetoothOn){
+//                        if(isDCEnd.getValue()){
+//                            isDCEnd.setValue(false);
+//                            //데이터 모으는 메소드 call 추가
+//                        }
+//                        else{
+//                            isDCEnd.setValue(true);
+//                            //데이터 수집 중지 메소드 call 추가
+//                        }
+//                    }
+//                    else{
+//                        return;
+//                    }
+//                    isDCClicked.setValue(false);
+//                }
+//            }
+//        });
     }
 }
