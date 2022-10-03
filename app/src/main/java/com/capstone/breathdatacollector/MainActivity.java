@@ -76,27 +76,25 @@ public class MainActivity extends AppCompatActivity {
 
         //데이터를 파일에 저장
         ActivityResultLauncher<Intent> mStartForResult = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                result -> {
-                    //result.getResultCode()를 통하여 결과값 확인
-                    if(result.getResultCode() == RESULT_OK) {
-                        BufferedOutputStream bs = null;
-                        try{
-                            bs = new BufferedOutputStream(new FileOutputStream(fileName));
-                            String str = new String();//수현이 데이터에서 파일에 적을 문자열 받아오기
-                            bs.write(str.getBytes());
-                            bs.close();
-                        } catch (IOException e) {
-                            e.getStackTrace();
-                        }
-                    }
-                    if(result.getResultCode() == RESULT_CANCELED){
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                //result.getResultCode()를 통하여 결과값 확인
+                if(result.getResultCode() == RESULT_OK) {
+                    BufferedOutputStream bs = null;
+                    try{
+                        bs = new BufferedOutputStream(new FileOutputStream(fileName));
+                        String str = new String();//수현이 데이터에서 파일에 적을 문자열 받아오기
+                        bs.write(str.getBytes());
+                        bs.close();
+                    } catch (IOException e) {
+                        e.getStackTrace();
                     }
                 }
+                if(result.getResultCode() == RESULT_CANCELED){
+                }
+            }
         );
 
-
-        mStartForResult.launch(intent);
 
         Button btnDataCollect = findViewById(R.id.button1);
         Button btnCalibrate = findViewById(R.id.button2);
@@ -119,6 +117,7 @@ public class MainActivity extends AppCompatActivity {
 
 //                if(true){ //임시로, 이거 지울거임
                     if(isDCEnd.getValue()){
+                        mStartForResult.launch(intent);
                         isDCEnd.setValue(false);
                         //데이터 모으는 메소드 call 추가
                         countDownTimer.start();
