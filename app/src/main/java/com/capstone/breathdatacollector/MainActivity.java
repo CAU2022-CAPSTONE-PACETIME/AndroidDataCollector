@@ -12,6 +12,7 @@ import android.provider.Settings;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -36,9 +37,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        boolean isBluetoothOn = BluetoothHelper.checkBluetoothEnabled(MainActivity.this); //블루투스가 켜져있는지 항상 확인할 수 있으면 좋을듯 livedata라든지 해서
-
 
         SensorHelper sensorManager = new SensorHelper(MainActivity.this);
 
@@ -72,7 +70,7 @@ public class MainActivity extends AppCompatActivity {
 
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE).setType("text/plain");
-        String fileName = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy_MM_dd_HH:mm:ss")) + ".txt";
+        String fileName = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss")) + ".txt";
         intent.putExtra(Intent.EXTRA_TITLE, fileName);
 
 
@@ -85,22 +83,29 @@ public class MainActivity extends AppCompatActivity {
 //                        isDCEnd.setValue(false);
 //                        //데이터 모으는 메소드 call 추가
 //                        countDownTimer.start();
-                    BufferedOutputStream bs = null;
-                    try{
-                        bs = new BufferedOutputStream(new FileOutputStream(fileName));
-                        String str = new String();//수현이 데이터에서 파일에 적을 문자열 받아오기
-                        bs.write(str.getBytes());
-                        bs.close();
-                    } catch (IOException e) {
-                        e.getStackTrace();
-                    }
+                        String str = sensorManager.getBreathData();//수현이 데이터에서 파일에 적을 문자열 받아오기
+                        if(str == null){
+                            Toast noDataAlarm = Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_SHORT);
+                            return;
+                        }
+                        else{
+                            BufferedOutputStream bs = null;
+                            try{
+                                bs = new BufferedOutputStream(new FileOutputStream(fileName));
+//                            String str = sensorManager.getBreathData();//수현이 데이터에서 파일에 적을 문자열 받아오기
+                                bs.write(str.getBytes());
+                                bs.close();
+                            } catch (IOException e) {
+                                e.getStackTrace();
+                            }
+                        }
                     }
                     if(result.getResultCode() == RESULT_CANCELED){
                     }
                 }
         );
 
-        CountDownTimer countDownTimer = new CountDownTimer(60000, 1000) {
+        CountDownTimer countDownTimer = new CountDownTimer(10000, 1000) {
             public void onTick(long millisUntilFinished) {
                 TextView time = findViewById(R.id.time);
                 time.setText("seconds remaining: " +(millisUntilFinished / 1000));
@@ -124,52 +129,42 @@ public class MainActivity extends AppCompatActivity {
 
 
         btnDataCollect.setOnClickListener(new View.OnClickListener(){
-            @Override public void onClick(View view){
+            @Override public void onClick(View view) {
 //                isDCClicked.setValue(true);
 //                boolean isBluetoothOn = BluetoothHelper.checkBluetoothEnabled(MainActivity.this);
-                if (isBluetoothOn){
 
 //                if(true){ //임시로, 이거 지울거임
-                    if(isDCEnd.getValue()){
+                if (isDCEnd.getValue()) {
 //                        mStartForResult.launch(intent); //여기를 어떻게 할지 고민이 되네. 데이터를 다 받아온 다음에
 //                        해야 데이터를 파일에 write해야 하는데... launch하는 순간 intent(파일 create하는 내용 담음) 조건이
 //                        성립하고, 바로 write를 시작하는데 그 때는 데이터 수집이 막 시작한 때라 모은 데이터가 없다....
-                        isDCEnd.setValue(false);
-                        //데이터 모으는 메소드 call 추가
-                        countDownTimer.start();
-                    }
-                    else{
-                        isDCEnd.setValue(true);
-                        //데이터 수집 중지 메소드 call 추가
-                        countDownTimer.cancel();
-                    }
+                    isDCEnd.setValue(false);
+                    //데이터 모으는 메소드 call 추가
+                    sensorManager.doCollectData(60000);
+                    countDownTimer.start();
+                } else {
+                    isDCEnd.setValue(true);
+                    //데이터 수집 중지 메소드 call 추가
+                    countDownTimer.cancel();
+                    mStartForResult.launch(intent);
                 }
-                else{
-                    return;
-                }
-            }
-        });
-        btnCalibrate.setOnClickListener((new View.OnClickListener() {
+
+            }});
+        btnCalibrate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 //click 하면 click 할 때 변하는 변수 추가
 //                isCaliClicked.setValue(true);
 //                boolean isBluetoothOn = BluetoothHelper.checkBluetoothEnabled(MainActivity.this);
-                if (isBluetoothOn){
 //                if(true){ //임시로, 이거 지울거임
-                    if(isCaliEnd.getValue()){
-                        isCaliEnd.setValue(false);
-                        //데이터 모으는 메소드 call 추가
-                    }
-                    else{
-                        isCaliEnd.setValue(true);
-                        //데이터 수집 중지 메소드 call 추가
-                    }
+                if (isCaliEnd.getValue()) {
+                    isCaliEnd.setValue(false);
+                    //데이터 모으는 메소드 call 추가
+                } else {
+                    isCaliEnd.setValue(true);
+                    //데이터 수집 중지 메소드 call 추가
                 }
-                else{
-                    return;
-                }
-            }}));
+            }});
 
         isCaliEnd.observe(this, new Observer<Boolean>() {
             public void onChanged(Boolean caliState){
