@@ -44,31 +44,23 @@ public class BluetoothHelper {
 
     private BluetoothProfile.ServiceListener profileListener;
     private BluetoothDevice myDevice;
-    private static BluetoothHelper instance;
 
-    private BluetoothHelper() {
+    public BluetoothHelper(MainActivity activity) {
         Log.d(TAG, "Create Bluetooth Helper");
         adapter = BluetoothAdapter.getDefaultAdapter();
+
+        if(!checkBluetoothEnabled(activity)){
+            adapter = null;
+
+        }
     }
 
-    public static BluetoothHelper getInstance(){
-        if(instance == null){
-            instance = new BluetoothHelper();
-        }
-        return instance;
-    }
-
-    public static boolean checkBluetoothEnabled(AppCompatActivity activity){
-        if(instance == null){
-            instance = new BluetoothHelper();
-        }
-        if (instance.adapter == null) {
+    private boolean checkBluetoothEnabled(AppCompatActivity activity){
+        if (adapter == null) {
             return false;
         }
 
         ActivityResultLauncher<String> permissionLauncher;
-
-        ActivityResultCallback<Boolean> arc;
 
         if(activity.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED){
             permissionLauncher = activity.registerForActivityResult(new ActivityResultContracts.RequestPermission(), (isGranted) -> {
@@ -95,7 +87,7 @@ public class BluetoothHelper {
             }
         }
 
-        if (!instance.adapter.isEnabled()) {
+        if (!adapter.isEnabled()) {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
                     .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
@@ -107,14 +99,14 @@ public class BluetoothHelper {
                                     .setTitle("블루투스 활성화")
                                     .setMessage("데이터 수집을 위해서, 블루투스를 활성화해 주세요.")
                                     .setPositiveButton("확인", (DialogInterface dialog, int which) -> {
-                                            Intent intent = new Intent();
-                                            intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                                            Uri uri = Uri.fromParts("package",
-                                                    BuildConfig.APPLICATION_ID, null);
-                                            intent.setData(uri);
-                                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                                            activity.startActivity(intent);
-                                        }
+                                                Intent intent = new Intent();
+                                                intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                                                Uri uri = Uri.fromParts("package",
+                                                        BuildConfig.APPLICATION_ID, null);
+                                                intent.setData(uri);
+                                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                                activity.startActivity(intent);
+                                            }
                                     )
                                     .create()
                                     .show();
@@ -122,7 +114,7 @@ public class BluetoothHelper {
                     });
             launcher.launch(enableBtIntent);
 
-            return instance.adapter.isEnabled();
+            return adapter.isEnabled();
         }
 
         return true;
@@ -142,17 +134,20 @@ public class BluetoothHelper {
                 @Override
                 public void onServiceConnected(int profile, BluetoothProfile proxy) {
                     if (profile == BluetoothProfile.HEADSET) {
-                        Log.d(TAG, "Headset Connected");
+                        Log.d(TAG, "Headset Connected At Listener");
                         headset = (BluetoothHeadset) proxy;
-                        for (BluetoothDevice device : headset.getConnectedDevices()) {
-                            if (headset.isAudioConnected(device)) {
-                                myDevice = device;
-                            }
-                            Log.d(TAG, device.getName());
-                            Log.d(TAG, device.getAddress());
-                            Log.d(TAG, "Bluetooth HeadSet Service Connected");
-
-                        }
+//
+//                        for (BluetoothDevice device : headset.getConnectedDevices()) {
+//                            if(device.getName().contains("Watch"))
+//                                continue;
+//                            if (headset.isAudioConnected(device)) {
+//                                myDevice = device;
+//                            }
+//                            Log.d(TAG, device.getName());
+//                            Log.d(TAG, device.getAddress());
+//                            Log.d(TAG, "Bluetooth HeadSet Service Connected");
+//
+//                        }
                     }
                 }
 
@@ -160,8 +155,9 @@ public class BluetoothHelper {
                 @Override
                 public void onServiceDisconnected(int profile) {
                     if (profile == BluetoothProfile.HEADSET) {
-                        Log.d(TAG, "Headset Disconnected");
                         headset = null;
+
+                        Log.d(TAG, "Headset Disconnected");
                         myDevice = null;
                     }
                 }
@@ -203,7 +199,17 @@ public class BluetoothHelper {
                             : prevState == BluetoothHeadset.STATE_DISCONNECTING ? "DISCONNECTING"
                             : "Unknown";
                     if(state == BluetoothHeadset.STATE_CONNECTED){
+                        if(device.getName().contains("Watch")){
+                            Log.i(TAG, "find Watch on Receiver");
+                            return;
+                        }
                         myDevice = device;
+
+                        Log.d(TAG, "Bluetooth HeadSet Service Connected At Receiver");
+                        Log.d(TAG, device.getName());
+                        Log.d(TAG, device.getAddress());
+
+
                         Toast.makeText(context, "Bluetooth Headset Connected", Toast.LENGTH_SHORT).show();
                         context.unregisterReceiver(this);
                     }
