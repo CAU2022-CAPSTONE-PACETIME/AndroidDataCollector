@@ -1,10 +1,14 @@
 package com.capstone.breathdatacollector;
 
+import static java.lang.Math.abs;
+
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -15,19 +19,19 @@ import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.net.Uri;
-import android.os.CountDownTimer;
 import android.provider.Settings;
 import android.util.Log;
 
-import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.core.app.ActivityCompat;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 
 import java.nio.ShortBuffer;
 import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 public class SensorHelper implements SensorEventListener {
     private static final String TAG = "SENSOR_MANAGER";
@@ -52,31 +56,58 @@ public class SensorHelper implements SensorEventListener {
     private List<float[]> gyroData;
     private List<Long> imuTimeStamp;
 
-    private ActivityResultLauncher<String> permissionLauncher;
+    private CalibrationData caliData;
+
+    private BreathData breathData;
 
     public SensorHelper(MainActivity activity) {
         this.activity = activity;
         this.context = activity.getApplicationContext();
-        bluetoothHelper = BluetoothHelper.getInstance();
-        permissionLauncher = activity.registerForActivityResult(new ActivityResultContracts.RequestPermission(), (isGranted) -> {
-            if (!isGranted) {
-                new AlertDialog.Builder(activity.getApplicationContext())
-                        .setTitle("녹음 권한")
-                        .setMessage("앱을 사용하시려면, 녹음 권한을 허용해 주세요.")
-                        .setPositiveButton("확인", (DialogInterface dialog, int which) -> {
-                                    Intent intent = new Intent();
-                                    intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                                    Uri uri = Uri.fromParts("package",
-                                            BuildConfig.APPLICATION_ID, null);
-                                    intent.setData(uri);
-                                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                                    activity.startActivity(intent);
-                                }
-                        )
-                        .create()
-                        .show();
-            }
-        });
+        bluetoothHelper = new BluetoothHelper(activity);
+
+        caliData = null;
+        breathData = null;
+        checkPermissions(activity, Manifest.permission.RECORD_AUDIO, "녹음");
+        checkPermissions(activity, Manifest.permission.ACTIVITY_RECOGNITION, "활동 인지");
+        setCaliDataBySharedPref(activity);
+    }
+
+    private boolean checkPermissions(AppCompatActivity activity, String permission, String content){
+        if (activity.checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED){
+            ActivityResultLauncher<String> permissionLauncher;
+            permissionLauncher = activity.registerForActivityResult(new ActivityResultContracts.RequestPermission(), (isGranted) -> {
+                if (!isGranted) {
+                    new AlertDialog.Builder(activity.getApplicationContext())
+                            .setTitle(content + " 권한")
+                            .setMessage("앱을 사용하시려면, "+ content +" 권한을 허용해 주세요.")
+                            .setPositiveButton("확인", (DialogInterface dialog, int which) -> {
+                                        Intent intent = new Intent();
+                                        intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                                        Uri uri = Uri.fromParts("package",
+                                                BuildConfig.APPLICATION_ID, null);
+                                        intent.setData(uri);
+                                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                        activity.startActivity(intent);
+                                    }
+                            )
+                            .create()
+                            .show();
+                }
+            });
+
+            permissionLauncher.launch(permission);
+            return false;
+        }
+
+        return true;
+    }
+
+    private void setCaliDataBySharedPref(Context context){
+        SharedPreferences sharedPref = context.getSharedPreferences("BreathData", Context.MODE_PRIVATE);
+
+        if(sharedPref.contains("CALI")){
+            caliData = CalibrationData.setData(sharedPref.getString("CALI", null));
+        }
     }
 
     private void setSensors() {
@@ -101,6 +132,7 @@ public class SensorHelper implements SensorEventListener {
     }
 
 
+    @SuppressLint("MissingPermission")
     private void setMic() {
         if (context == null) {
             Log.d(TAG, "SET_SENSOR CONTEXT is NULL");
@@ -120,13 +152,6 @@ public class SensorHelper implements SensorEventListener {
             bufferRecordSize = AudioRecord.getMinBufferSize(AUDIO_SAMP_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
             bufferRecord = new short[bufferRecordSize];
 
-            Log.i("AUDIO_INFO", "Check Self Permission");
-
-            if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-
-                permissionLauncher.launch(Manifest.permission.RECORD_AUDIO);
-                return;
-            }
             audioSensor = new AudioRecord(MediaRecorder.AudioSource.MIC,
                     AUDIO_SAMP_RATE,
                     AudioFormat.CHANNEL_IN_MONO,
@@ -140,15 +165,53 @@ public class SensorHelper implements SensorEventListener {
             audioSensor.startRecording();
             shortBuffer.rewind();
             shortBuffer.position(0);
-
         }
         else{
             MainActivity.isCaliEnd.postValue(true);
         }
     }
 
-    public String getData() {
-        return "";
+    public void doCollectData(long timeInMillis){
+        if(caliData == null){
+            return;
+        }
+
+        if (accSensor == null || gyroSensor == null)
+            setSensors();
+        setMic();
+
+        if(audioSensor == null){
+            return;
+        }
+
+        Thread dataThread = new Thread(() -> {
+            sensorManager.registerListener(this, accSensor, SensorManager.SENSOR_DELAY_NORMAL);
+            sensorManager.registerListener(this, gyroSensor, SensorManager.SENSOR_DELAY_NORMAL);
+            long start;
+            long end = 0;
+            start = System.currentTimeMillis();
+            while(end - start < timeInMillis && Boolean.FALSE.equals(MainActivity.isDCEnd.getValue())){
+                int size = audioSensor.read(bufferRecord, 0, bufferRecordSize);
+
+                shortBuffer.put(bufferRecord, 0, size);
+                end = System.currentTimeMillis();
+            }
+
+            sensorManager.unregisterListener(this);
+            stopMic();
+
+            makeBreathData(start, end);
+
+            MainActivity.isDCEnd.postValue(true);
+        });
+        dataThread.start();
+    }
+
+    public String getBreathData() {
+        if(breathData == null){
+            return null;
+        }
+        return breathData.toString();
     }
 
     public void calibrate() {
@@ -195,7 +258,9 @@ public class SensorHelper implements SensorEventListener {
             sensorManager.unregisterListener(this);
             stopMic();
 
-            calculateDelay(start, end, soundPeakTime);
+            calculateDelay(soundPeakTime);
+
+            MainActivity.isCaliEnd.postValue(true);
         });
         dataThread.start();
     }
@@ -209,28 +274,43 @@ public class SensorHelper implements SensorEventListener {
         }
     }
 
-    private void calculateDelay(long soundStart, long soundEnd, long soundPeak){
-        int imuPeakIdx = accData.indexOf(accData.stream().max(new Comparator<float[]>() {
-            @Override
-            public int compare(float[] floats, float[] t1) {
-                float val1 = floats[0]*floats[0] + floats[1]*floats[1] + floats[2]*floats[2];
-                float val2 = t1[0] * t1[0] + t1[1] * t1[1] + t1[2]*t1[2];
+    private void calculateDelay(long soundPeak){
+        Optional<float[]> aboutMax = accData.stream().max((float[] floats, float[] t1) -> {
+                    float val1 = floats[0]*floats[0] + floats[1]*floats[1] + floats[2]*floats[2];
+                    float val2 = t1[0] * t1[0] + t1[1] * t1[1] + t1[2]*t1[2];
 
-                if(val1 > val2)
-                    return 1;
-                else if(val1 == val2)
-                    return 0;
-                return -1;
-            }
-        }).get());
+                    if(val1 > val2)
+                        return 1;
+                    else if(val1 == val2)
+                        return 0;
+                    return -1;
+                }
+        );
 
-        long imuPeakTime = imuTimeStamp.get(imuPeakIdx);
+        if(aboutMax.isPresent()){
+            int imuPeakIdx = accData.indexOf(aboutMax.get());
+            long imuPeakTime = imuTimeStamp.get(imuPeakIdx);
+            long diff = soundPeak - imuPeakTime;
 
-        long diff = imuPeakTime - soundPeak;
+            Log.d(TAG, "SOUND PEAK Value: " + shortBuffer.get(0));
+            Log.d(TAG, "IMU   PEAK Value: " + Arrays.toString(accData.get(imuPeakIdx)));
 
-        Log.d(TAG, "DIFF: " + diff);
+            Log.d(TAG, "SOUND PEAK Time: " + soundPeak);
+            Log.d(TAG, "IMU   PEAK Time: " + imuPeakTime);
+            Log.d(TAG, "DIFF: " + diff);
+
+            this.caliData = new CalibrationData(diff);
+
+            shortBuffer.clear();
+            imuTimeStamp.clear();
+            accData.clear();
+            gyroData.clear();
+        }
     }
 
+    public CalibrationData getCaliData(){
+        return caliData;
+    }
 
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
@@ -249,4 +329,109 @@ public class SensorHelper implements SensorEventListener {
     public void onAccuracyChanged(Sensor sensor, int i) {
 
     }
+
+    private void makeBreathData(long soundStartTime, long soundEndTime){
+        final long imuStartTime = soundStartTime - caliData.getPeakToPeakDalay();
+
+        long minDiff = 1000000000;
+        long val = imuTimeStamp.get(0);
+        for(long t : imuTimeStamp){
+            if(abs(t - imuStartTime) < minDiff){
+                minDiff = abs(t - imuStartTime);
+                val = t;
+            }
+        }
+
+        int imuStartTimeIdx = imuTimeStamp.indexOf(val);
+
+        long endTimeDiff = soundEndTime - imuTimeStamp.get(imuTimeStamp.size()-1);
+
+        breathData = new BreathData(
+                accData.subList(imuStartTimeIdx, accData.size()-1)
+                , gyroData.subList(imuStartTimeIdx, gyroData.size() - 1)
+                , shortBuffer.array()
+                );
+    }
+
+    static class BreathData{
+        List<float[]> acc, gyro;
+        short[] sound;
+        BreathData(List<float[]> acc, List<float[]>gyro, short[] sound){
+            this.acc = acc;
+            this.gyro = gyro;
+            this.sound = sound;
+        }
+
+        @NonNull
+        @Override
+        public String toString() {
+            StringBuilder ret = new StringBuilder();
+            ret.append("accx,");
+            for(float[] data : acc){
+                ret.append(data[0])
+                        .append(",");
+            }
+            ret.append("\naccy,");
+            for(float[] data : acc){
+                ret.append(data[1])
+                        .append(",");
+            }
+            ret.append("\naccz,");
+            for(float[] data : acc){
+                ret.append(data[2])
+                        .append(",");
+            }
+            ret.append("\ngyrox,");
+            for(float[] data : gyro){
+                ret.append(data[0])
+                        .append(",");
+            }
+            ret.append("\ngyroy,");
+            for(float[] data : gyro){
+                ret.append(data[1])
+                        .append(",");
+            }
+            ret.append("\ngyroz,");
+            for(float[] data : gyro){
+                ret.append(data[2])
+                        .append(",");
+            }
+
+            ret.append(";\nsound,");
+            for(short data : sound){
+                ret.append(data)
+                        .append(",");
+            }
+            return ret.toString();
+        }
+    }
+
+    static class CalibrationData{
+        long peakToPeakDalay;
+
+        CalibrationData(long peakToPeakDalay){
+            this.peakToPeakDalay = peakToPeakDalay;
+        }
+
+        long getPeakToPeakDalay(){
+            return peakToPeakDalay;
+        }
+
+        @NonNull
+        @Override
+        public String toString() {
+            return "" + peakToPeakDalay;
+        }
+
+        public static CalibrationData setData(String str){
+            if(str == null){
+                return null;
+            }
+
+            return new CalibrationData(Long.parseLong(str));
+        }
+    }
+
+
+
 }
