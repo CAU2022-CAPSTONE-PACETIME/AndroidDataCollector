@@ -42,6 +42,9 @@ public class MainActivity extends AppCompatActivity {
 
         SensorHelper sensorManager = new SensorHelper(MainActivity.this);
 
+        Button btnDataCollect = findViewById(R.id.button1);
+        Button btnCalibrate = findViewById(R.id.button2);
+
         if(this.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED){
             ActivityResultLauncher<String> permissionLauncher = this.registerForActivityResult(new ActivityResultContracts.RequestPermission(), (isGranted) -> {
                 if (!isGranted) {
@@ -49,13 +52,13 @@ public class MainActivity extends AppCompatActivity {
                             .setTitle("저장소 접근 권한")
                             .setMessage("앱을 사용하시려면, 저장소 권한을 허용해 주세요.")
                             .setPositiveButton("확인", (DialogInterface dialog, int which)->{
-                                        Intent intent = new Intent();
-                                        intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                                        Intent intentAuth = new Intent();
+                                        intentAuth.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
                                         Uri uri = Uri.fromParts("package",
                                                 BuildConfig.APPLICATION_ID, null);
-                                        intent.setData(uri);
-                                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                                        this.startActivity(intent);
+                                        intentAuth.setData(uri);
+                                        intentAuth.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                        this.startActivity(intentAuth);
                                     }
                             )
                             .create()
@@ -67,37 +70,11 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
-        intent.addCategory(Intent.CATEGORY_OPENABLE)
-                .setType("text/plain");
+        intent.addCategory(Intent.CATEGORY_OPENABLE).setType("text/plain");
         String fileName = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy_MM_dd_HH:mm:ss")) + ".txt";
         intent.putExtra(Intent.EXTRA_TITLE, fileName);
 
-        //데이터를 파일에 저장
-        ActivityResultLauncher<Intent> mStartForResult = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            result -> {
-                //result.getResultCode()를 통하여 결과값 확인
-                if(result.getResultCode() == RESULT_OK) {
-                    BufferedOutputStream bs = null;
-                    try{
-                        bs = new BufferedOutputStream(new FileOutputStream(fileName));
-                        String str = new String();//수현이 데이터에서 파일에 적을 문자열 받아오기
-                        bs.write(str.getBytes());
-                        bs.close();
-                    } catch (IOException e) {
-                        e.getStackTrace();
-                    }
-                }
-                if(result.getResultCode() == RESULT_CANCELED){
-                }
-            }
-        );
-
-
-        Button btnDataCollect = findViewById(R.id.button1);
-        Button btnCalibrate = findViewById(R.id.button2);
         CountDownTimer countDownTimer = new CountDownTimer(60000, 1000) {
             public void onTick(long millisUntilFinished) {
                 TextView time = findViewById(R.id.time);
@@ -105,10 +82,47 @@ public class MainActivity extends AppCompatActivity {
             }
             public void onFinish() {
                 //stop collecting
+                BufferedOutputStream bs = null;
+                try{
+                    bs = new BufferedOutputStream(new FileOutputStream(fileName));
+                    String str = new String();//수현이 데이터에서 파일에 적을 문자열 받아오기
+                    bs.write(str.getBytes());
+                    bs.close();
+                } catch (IOException e) {
+                    e.getStackTrace();
+                }
                 TextView time = findViewById(R.id.time);
                 time.setText("Collecting time: 60s");
             }
         };
+
+
+        //데이터를 파일에 저장
+        ActivityResultLauncher<Intent> mStartForResult = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    //result.getResultCode()를 통하여 결과값 확인
+                    if(result.getResultCode() == RESULT_OK) {
+                        isDCEnd.setValue(false);
+                        //데이터 모으는 메소드 call 추가
+                        countDownTimer.start();
+//                    BufferedOutputStream bs = null;
+//                    try{
+//                        bs = new BufferedOutputStream(new FileOutputStream(fileName));
+//                        String str = new String();//수현이 데이터에서 파일에 적을 문자열 받아오기
+//                        bs.write(str.getBytes());
+//                        bs.close();
+//                    } catch (IOException e) {
+//                        e.getStackTrace();
+//                    }
+                    }
+                    if(result.getResultCode() == RESULT_CANCELED){
+                    }
+                }
+        );
+
+
+
         btnDataCollect.setOnClickListener(new View.OnClickListener(){
             @Override public void onClick(View view){
 //                isDCClicked.setValue(true);
@@ -117,10 +131,12 @@ public class MainActivity extends AppCompatActivity {
 
 //                if(true){ //임시로, 이거 지울거임
                     if(isDCEnd.getValue()){
-                        mStartForResult.launch(intent);
-                        isDCEnd.setValue(false);
-                        //데이터 모으는 메소드 call 추가
-                        countDownTimer.start();
+                        mStartForResult.launch(intent); //여기를 어떻게 할지 고민이 되네. 데이터를 다 받아온 다음에
+//                        해야 데이터를 파일에 write해야 하는데... launch하는 순간 intent(파일 create하는 내용 담음) 조건이
+//                        성립하고, 바로 write를 시작하는데 그 때는 데이터 수집이 막 시작한 때라 모은 데이터가 없다....
+//                        isDCEnd.setValue(false);
+//                        //데이터 모으는 메소드 call 추가
+//                        countDownTimer.start();
                     }
                     else{
                         isDCEnd.setValue(true);
