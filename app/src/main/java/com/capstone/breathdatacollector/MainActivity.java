@@ -85,7 +85,8 @@ public class MainActivity extends AppCompatActivity {
 //                        countDownTimer.start();
                         String str = sensorManager.getBreathData();//수현이 데이터에서 파일에 적을 문자열 받아오기
                         if(str == null){
-                            Toast noDataAlarm = Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_SHORT);
+                            Toast noDataAlarm = Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG);
+                            System.out.println("no string");
                             return;
                         }
                         else{
@@ -94,6 +95,8 @@ public class MainActivity extends AppCompatActivity {
                                 bs = new BufferedOutputStream(new FileOutputStream(fileName));
 //                            String str = sensorManager.getBreathData();//수현이 데이터에서 파일에 적을 문자열 받아오기
                                 bs.write(str.getBytes());
+
+                                System.out.println("str = " + str);
                                 bs.close();
                             } catch (IOException e) {
                                 e.getStackTrace();
@@ -121,8 +124,8 @@ public class MainActivity extends AppCompatActivity {
 //                } catch (IOException e) {
 //                    e.getStackTrace();
 //                }
-//                TextView time = findViewById(R.id.time);
-//                time.setText("Collecting time: 60s");
+                TextView time = findViewById(R.id.time);
+                time.setText("Collecting time: 60s");
                 mStartForResult.launch(intent);
             }
         };
@@ -158,6 +161,7 @@ public class MainActivity extends AppCompatActivity {
 //                boolean isBluetoothOn = BluetoothHelper.checkBluetoothEnabled(MainActivity.this);
 //                if(true){ //임시로, 이거 지울거임
                 if (isCaliEnd.getValue()) {
+                    sensorManager.calibrate();
                     isCaliEnd.setValue(false);
                     //데이터 모으는 메소드 call 추가
                 } else {
