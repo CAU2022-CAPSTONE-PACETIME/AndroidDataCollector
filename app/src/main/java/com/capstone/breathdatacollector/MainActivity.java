@@ -75,27 +75,6 @@ public class MainActivity extends AppCompatActivity {
         String fileName = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy_MM_dd_HH:mm:ss")) + ".txt";
         intent.putExtra(Intent.EXTRA_TITLE, fileName);
 
-        CountDownTimer countDownTimer = new CountDownTimer(60000, 1000) {
-            public void onTick(long millisUntilFinished) {
-                TextView time = findViewById(R.id.time);
-                time.setText("seconds remaining: " +(millisUntilFinished / 1000));
-            }
-            public void onFinish() {
-                //stop collecting
-                BufferedOutputStream bs = null;
-                try{
-                    bs = new BufferedOutputStream(new FileOutputStream(fileName));
-                    String str = new String();//수현이 데이터에서 파일에 적을 문자열 받아오기
-                    bs.write(str.getBytes());
-                    bs.close();
-                } catch (IOException e) {
-                    e.getStackTrace();
-                }
-                TextView time = findViewById(R.id.time);
-                time.setText("Collecting time: 60s");
-            }
-        };
-
 
         //데이터를 파일에 저장
         ActivityResultLauncher<Intent> mStartForResult = registerForActivityResult(
@@ -103,24 +82,45 @@ public class MainActivity extends AppCompatActivity {
                 result -> {
                     //result.getResultCode()를 통하여 결과값 확인
                     if(result.getResultCode() == RESULT_OK) {
-                        isDCEnd.setValue(false);
-                        //데이터 모으는 메소드 call 추가
-                        countDownTimer.start();
-//                    BufferedOutputStream bs = null;
-//                    try{
-//                        bs = new BufferedOutputStream(new FileOutputStream(fileName));
-//                        String str = new String();//수현이 데이터에서 파일에 적을 문자열 받아오기
-//                        bs.write(str.getBytes());
-//                        bs.close();
-//                    } catch (IOException e) {
-//                        e.getStackTrace();
-//                    }
+//                        isDCEnd.setValue(false);
+//                        //데이터 모으는 메소드 call 추가
+//                        countDownTimer.start();
+                    BufferedOutputStream bs = null;
+                    try{
+                        bs = new BufferedOutputStream(new FileOutputStream(fileName));
+                        String str = new String();//수현이 데이터에서 파일에 적을 문자열 받아오기
+                        bs.write(str.getBytes());
+                        bs.close();
+                    } catch (IOException e) {
+                        e.getStackTrace();
+                    }
                     }
                     if(result.getResultCode() == RESULT_CANCELED){
                     }
                 }
         );
 
+        CountDownTimer countDownTimer = new CountDownTimer(60000, 1000) {
+            public void onTick(long millisUntilFinished) {
+                TextView time = findViewById(R.id.time);
+                time.setText("seconds remaining: " +(millisUntilFinished / 1000));
+            }
+            public void onFinish() {
+                //stop collecting
+//                BufferedOutputStream bs = null;
+//                try{
+//                    bs = new BufferedOutputStream(new FileOutputStream(fileName));
+//                    String str = new String();//수현이 데이터에서 파일에 적을 문자열 받아오기
+//                    bs.write(str.getBytes());
+//                    bs.close();
+//                } catch (IOException e) {
+//                    e.getStackTrace();
+//                }
+//                TextView time = findViewById(R.id.time);
+//                time.setText("Collecting time: 60s");
+                mStartForResult.launch(intent);
+            }
+        };
 
 
         btnDataCollect.setOnClickListener(new View.OnClickListener(){
@@ -131,12 +131,12 @@ public class MainActivity extends AppCompatActivity {
 
 //                if(true){ //임시로, 이거 지울거임
                     if(isDCEnd.getValue()){
-                        mStartForResult.launch(intent); //여기를 어떻게 할지 고민이 되네. 데이터를 다 받아온 다음에
+//                        mStartForResult.launch(intent); //여기를 어떻게 할지 고민이 되네. 데이터를 다 받아온 다음에
 //                        해야 데이터를 파일에 write해야 하는데... launch하는 순간 intent(파일 create하는 내용 담음) 조건이
 //                        성립하고, 바로 write를 시작하는데 그 때는 데이터 수집이 막 시작한 때라 모은 데이터가 없다....
-//                        isDCEnd.setValue(false);
-//                        //데이터 모으는 메소드 call 추가
-//                        countDownTimer.start();
+                        isDCEnd.setValue(false);
+                        //데이터 모으는 메소드 call 추가
+                        countDownTimer.start();
                     }
                     else{
                         isDCEnd.setValue(true);
