@@ -8,6 +8,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.os.Environment;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
@@ -22,8 +23,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Observer;
 
-import java.io.BufferedOutputStream;
-import java.io.FileOutputStream;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -91,15 +92,37 @@ public class MainActivity extends AppCompatActivity {
 //                            return;
                             Log.d("string is null", "null!");
                         }
-                        else{
-                            BufferedOutputStream bs = null;
-                            try{
-                                bs = new BufferedOutputStream(new FileOutputStream(fileName));
-//                            String str = sensorManager.getBreathData();//수현이 데이터에서 파일에 적을 문자열 받아오기
-                                bs.write(str.getBytes());
+                        else {
+                            String filePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + "/" + fileName;
+                            if (new File(filePath).exists()) {
+                                Log.d("EXISTS", "file exists!");
+                            } else {
+                                Log.d("NONE_FILE", "file does not exists TT");
+                            }
+                            Log.d("FILE_PATH", filePath);
+                            Log.d("string not null1", "str = " + str);
+//                            try{
+////                                File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + "/" + fileName);
+////                                FileWriter fileWriter = new FileWriter(file, false);
+////                                BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+//                                BufferedOutputStream bs = new BufferedOutputStream(new FileOutputStream(filePath));
+//
+//                                Log.d("string not null", "str = " + str);
+////                            String str = sensorManager.getBreathData();//수현이 데이터에서 파일에 적을 문자열 받아오기
+//                                bs.write(str.getBytes());
+//                                bs.close();
 
-                                Log.d("string not null", "str" + str);
-                                bs.close();
+//                                bufferedWriter.append(str);
+//                                bufferedWriter.close();
+//                            } catch (IOException e) {
+//                                e.getStackTrace();
+//                        }
+                            try {
+                                File file = new File(filePath);
+                                FileWriter writer = new FileWriter(file, false);
+                                writer.write(str);
+                                Log.d("string not null", "str = " + str);
+                                writer.close();
                             } catch (IOException e) {
                                 e.getStackTrace();
                             }
