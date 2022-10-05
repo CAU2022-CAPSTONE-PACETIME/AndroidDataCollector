@@ -21,6 +21,7 @@ import android.media.MediaRecorder;
 import android.net.Uri;
 import android.provider.Settings;
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -118,6 +119,13 @@ public class SensorHelper implements SensorEventListener {
 
         sensorManager = (android.hardware.SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
 
+        for(Sensor s : sensorManager.getSensorList(Sensor.TYPE_ACCELEROMETER)){
+            Log.d(TAG, "ACC: " + s.getName() + "\tVendor: " + s.getVendor() + "\tMinDelay" + s.getMinDelay());
+        }
+        for(Sensor s : sensorManager.getSensorList(Sensor.TYPE_GYROSCOPE)){
+            Log.d(TAG, "GYRO: " + s.getName() + "\tVendor: " + s.getVendor() + "\tMinDelay" + s.getMinDelay());
+        }
+
         accSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         gyroSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
 
@@ -209,6 +217,7 @@ public class SensorHelper implements SensorEventListener {
 
     public String getBreathData() {
         if(breathData == null){
+            Log.d(TAG, "Breath Data is empty");
             return null;
         }
         return breathData.toString();
@@ -232,10 +241,10 @@ public class SensorHelper implements SensorEventListener {
 
             long soundPeakTime = 0;
 
-            while(end - start < 1000L){
+            while(end - start < 1000L && Boolean.FALSE.equals(MainActivity.isCaliEnd.getValue())){
                 int size = audioSensor.read(bufferRecord, 0, bufferRecordSize);
                 if(!isRecordStart){
-                    short maxVal = 10000;
+                    short maxVal = 5000;
                     int maxPos = 0;
                     for(int i = 0; i < bufferRecord.length; i++){
                         short val = bufferRecord[i];
@@ -258,11 +267,25 @@ public class SensorHelper implements SensorEventListener {
             sensorManager.unregisterListener(this);
             stopMic();
 
+            Toast.makeText(context, "Finish Collecting for Cali", Toast.LENGTH_SHORT).show();
+
             calculateDelay(soundPeakTime);
+
+            Toast.makeText(context, "Finish Calculating Delay for Cali", Toast.LENGTH_SHORT).show();
+
+            saveCaliData();
 
             MainActivity.isCaliEnd.postValue(true);
         });
         dataThread.start();
+    }
+
+    private void saveCaliData(){
+        context.getSharedPreferences("BreathData", Context.MODE_PRIVATE)
+                .edit()
+                .remove("CALI")
+                .putLong("CALI", caliData.peakToPeakDalay)
+                .apply();
     }
 
     private void stopMic(){
@@ -275,7 +298,7 @@ public class SensorHelper implements SensorEventListener {
     }
 
     private void calculateDelay(long soundPeak){
-        Optional<float[]> aboutMax = accData.stream().max((float[] floats, float[] t1) -> {
+        Optional<float[]> aboutMax = accData.subList(3, accData.size()-1).stream().max((float[] floats, float[] t1) -> {
                     float val1 = floats[0]*floats[0] + floats[1]*floats[1] + floats[2]*floats[2];
                     float val2 = t1[0] * t1[0] + t1[1] * t1[1] + t1[2]*t1[2];
 
@@ -298,8 +321,33 @@ public class SensorHelper implements SensorEventListener {
             Log.d(TAG, "SOUND PEAK Time: " + soundPeak);
             Log.d(TAG, "IMU   PEAK Time: " + imuPeakTime);
             Log.d(TAG, "DIFF: " + diff);
+            Log.d(TAG, "MAX IDX: " + imuPeakIdx);
 
             this.caliData = new CalibrationData(diff);
+
+            StringBuilder x = new StringBuilder(), y= new StringBuilder(), z= new StringBuilder();
+            for(float[] val : accData){
+                x.append(val[0]).append(',');
+                y.append(val[1]).append(',');
+                z.append(val[2]).append(',');
+            }
+
+            Log.i(TAG, "X: " + x);
+            Log.i(TAG, "Y: " + y);
+            Log.i(TAG, "Z: " + z);
+
+            x = new StringBuilder();
+            y = new StringBuilder();
+            z = new StringBuilder();
+            for(float[] val : gyroData){
+                x.append(val[0]).append(',');
+                y.append(val[1]).append(',');
+                z.append(val[2]).append(',');
+            }
+
+            Log.i(TAG, "X: " + x);
+            Log.i(TAG, "Y: " + y);
+            Log.i(TAG, "Z: " + z);
 
             shortBuffer.clear();
             imuTimeStamp.clear();
@@ -316,11 +364,12 @@ public class SensorHelper implements SensorEventListener {
     public void onSensorChanged(SensorEvent sensorEvent) {
         switch(sensorEvent.sensor.getType()){
             case Sensor.TYPE_ACCELEROMETER:
-                accData.add(sensorEvent.values);
+//                Log.i("ACC_DATA", "" + Arrays.toString(sensorEvent.values));
+                accData.add(sensorEvent.values.clone());
                 imuTimeStamp.add(System.currentTimeMillis());
                 break;
             case Sensor.TYPE_GYROSCOPE:
-                gyroData.add(sensorEvent.values);
+                gyroData.add(sensorEvent.values.clone());
                 break;
         }
     }
