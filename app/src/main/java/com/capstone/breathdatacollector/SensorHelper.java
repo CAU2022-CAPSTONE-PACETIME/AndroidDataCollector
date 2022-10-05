@@ -61,6 +61,8 @@ public class SensorHelper implements SensorEventListener {
 
     private BreathData breathData;
 
+    private AudioManager audioManager;
+
     public SensorHelper(MainActivity activity) {
         this.activity = activity;
         this.context = activity.getApplicationContext();
@@ -68,6 +70,8 @@ public class SensorHelper implements SensorEventListener {
 
         caliData = null;
         breathData = null;
+
+        audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         checkPermissions(activity, Manifest.permission.RECORD_AUDIO, "녹음");
         checkPermissions(activity, Manifest.permission.ACTIVITY_RECOGNITION, "활동 인지");
         setCaliDataBySharedPref(activity);
@@ -147,7 +151,6 @@ public class SensorHelper implements SensorEventListener {
             return;
         }
 
-        AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         Log.d(TAG, "set Microphone");
 
         boolean isStartBtHeadset = bluetoothHelper.startBluetoothHeadset(context);
@@ -171,6 +174,7 @@ public class SensorHelper implements SensorEventListener {
             Log.i("AUDIO_INFO", "Buffer Record Size: " + bufferRecordSize);
 
             audioSensor.startRecording();
+            shortBuffer.clear();
             shortBuffer.rewind();
             shortBuffer.position(0);
         }
@@ -218,6 +222,9 @@ public class SensorHelper implements SensorEventListener {
             Log.d(TAG, "Breath Data is empty");
             return null;
         }
+
+        Log.i(TAG, "BreathData: " + breathData);
+
         return breathData.toString();
     }
 
@@ -376,9 +383,14 @@ public class SensorHelper implements SensorEventListener {
     private void makeBreathData(long soundStartTime, long soundEndTime){
         final long imuStartTime = soundStartTime - caliData.getPeakToPeakDalay();
 
+        Log.i(TAG, "SOUND: " + shortBuffer.array().length);
+        Log.i(TAG, "ACC: " + accData.size());
+        Log.i(TAG, "GYRO: " + gyroData.size());
+
         long minDiff = 1000000000;
         long val = imuTimeStamp.get(0);
         for(long t : imuTimeStamp){
+            // find start imu idx
             if(abs(t - imuStartTime) < minDiff){
                 minDiff = abs(t - imuStartTime);
                 val = t;
@@ -389,17 +401,29 @@ public class SensorHelper implements SensorEventListener {
 
         long endTimeDiff = soundEndTime - imuTimeStamp.get(imuTimeStamp.size()-1);
 
+        long minusCnt = endTimeDiff * 441L / 10L;
+
+        List<Short> soundData = new ArrayList<>();
+
+        int cnt = 0;
+        for(short s : shortBuffer.array()){
+            if(cnt >= shortBuffer.array().length - minusCnt){
+                break;
+            }
+            soundData.add(s);
+        }
+
         breathData = new BreathData(
                 accData.subList(imuStartTimeIdx, accData.size()-1)
                 , gyroData.subList(imuStartTimeIdx, gyroData.size() - 1)
-                , shortBuffer.array()
+                , soundData
                 );
     }
 
     static class BreathData{
         List<float[]> acc, gyro;
-        short[] sound;
-        BreathData(List<float[]> acc, List<float[]>gyro, short[] sound){
+        List<Short> sound;
+        BreathData(List<float[]> acc, List<float[]>gyro, List<Short> sound){
             this.acc = acc;
             this.gyro = gyro;
             this.sound = sound;
