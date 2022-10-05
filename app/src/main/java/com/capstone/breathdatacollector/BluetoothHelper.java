@@ -51,8 +51,9 @@ public class BluetoothHelper {
 
         if(!checkBluetoothEnabled(activity)){
             adapter = null;
-
         }
+
+        startBluetoothHeadset(activity);
     }
 
     private boolean checkBluetoothEnabled(AppCompatActivity activity){
@@ -166,7 +167,6 @@ public class BluetoothHelper {
             adapter.getProfileProxy(context, profileListener, BluetoothProfile.HEADSET);
         }
 
-
         context.registerReceiver(new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -175,6 +175,14 @@ public class BluetoothHelper {
                 int state = extras.getInt(BluetoothProfile.EXTRA_STATE);
                 int prevState = extras.getInt(BluetoothProfile.EXTRA_PREVIOUS_STATE);
                 BluetoothDevice device = extras.getParcelable(BluetoothDevice.EXTRA_DEVICE);
+
+
+                if(device != null){
+                    if(device.getName().contains("Watch")){
+                        Log.i(TAG, "find Watch on Receiver");
+                        return;
+                    }
+                }
 
                 if (action.equals(BluetoothHeadset.ACTION_AUDIO_STATE_CHANGED)) {
                     String stateStr = state == BluetoothHeadset.STATE_AUDIO_CONNECTED ? "AUDIO_CONNECTED"
@@ -185,6 +193,7 @@ public class BluetoothHelper {
                             : prevState == BluetoothHeadset.STATE_AUDIO_CONNECTING ? "AUDIO_CONNECTING"
                             : prevState == BluetoothHeadset.STATE_AUDIO_DISCONNECTED ? "AUDIO_DISCONNECTED"
                             : "Unknown";
+                    assert device != null;
                     Log.d(TAG, "BluetoothHeadset.ACTION_AUDIO_STATE_CHANGED: EXTRA_DEVICE=" + device.getName() + " EXTRA_STATE=" + stateStr + " EXTRA_PREVIOUS_STATE=" + prevStateStr);
                 }
                 else if (action.equals(BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED)) {
@@ -199,10 +208,6 @@ public class BluetoothHelper {
                             : prevState == BluetoothHeadset.STATE_DISCONNECTING ? "DISCONNECTING"
                             : "Unknown";
                     if(state == BluetoothHeadset.STATE_CONNECTED){
-                        if(device.getName().contains("Watch")){
-                            Log.i(TAG, "find Watch on Receiver");
-                            return;
-                        }
                         myDevice = device;
 
                         Log.d(TAG, "Bluetooth HeadSet Service Connected At Receiver");
@@ -214,6 +219,7 @@ public class BluetoothHelper {
                         context.unregisterReceiver(this);
                     }
 
+                    assert device != null;
                     Log.d(TAG, "BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED: EXTRA_DEVICE=" + device.getName() + " EXTRA_STATE=" + stateStr + " EXTRA_PREVIOUS_STATE=" + prevStateStr);
                 }
 
@@ -225,6 +231,9 @@ public class BluetoothHelper {
 
         if(headset == null){
             Log.d(TAG, "Failed By headset is null");
+
+            Toast.makeText(context, "Headset isn't connected", Toast.LENGTH_LONG).show();
+
             return false;
         }
 
@@ -233,10 +242,33 @@ public class BluetoothHelper {
             return false;
         }
 
-        Log.d(TAG, "start Bluetooth Headset Method End");
-        if(headset.isAudioConnected(myDevice)){
-            Log.d(TAG, "Headset isn't audio connected");
+        if(myDevice == null){
+            for(BluetoothDevice device : headset.getConnectedDevices()){
+                if(device.getName().contains("Watch"))
+                    continue;
+                myDevice = device;
+            }
+
+            if(myDevice == null) {
+                Log.d(TAG, "DEVICE is NULL");
+                return false;
+            }
+            return false;
         }
+
+        if(myDevice.getName().contains("Watch")){
+            for(BluetoothDevice device : headset.getConnectedDevices()){
+                if(device.getName().contains("Watch"))
+                    continue;
+                myDevice = device;
+            }
+            if(myDevice.getName().contains("Watch")) {
+                Log.d(TAG, "Watch is connected. Please Connect another Device");
+                return false;
+            }
+        }
+
+        Log.d(TAG, "start Bluetooth Headset Method End");
         return true;
     }
 
