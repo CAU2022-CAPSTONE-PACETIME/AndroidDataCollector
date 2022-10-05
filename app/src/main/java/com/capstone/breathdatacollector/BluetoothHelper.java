@@ -137,18 +137,17 @@ public class BluetoothHelper {
                     if (profile == BluetoothProfile.HEADSET) {
                         Log.d(TAG, "Headset Connected At Listener");
                         headset = (BluetoothHeadset) proxy;
-//
-//                        for (BluetoothDevice device : headset.getConnectedDevices()) {
-//                            if(device.getName().contains("Watch"))
-//                                continue;
-//                            if (headset.isAudioConnected(device)) {
-//                                myDevice = device;
-//                            }
-//                            Log.d(TAG, device.getName());
-//                            Log.d(TAG, device.getAddress());
-//                            Log.d(TAG, "Bluetooth HeadSet Service Connected");
-//
-//                        }
+
+                        for (BluetoothDevice device : headset.getConnectedDevices()) {
+                            if(device.getName().contains("Watch"))
+                                continue;
+                            myDevice = device;
+
+                            Log.d(TAG, device.getName());
+                            Log.d(TAG, device.getAddress());
+                            Log.d(TAG, "Bluetooth HeadSet Service Connected");
+
+                        }
                     }
                 }
 
