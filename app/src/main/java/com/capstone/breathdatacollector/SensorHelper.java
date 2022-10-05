@@ -179,7 +179,7 @@ public class SensorHelper implements SensorEventListener {
         }
     }
 
-    public void doCollectData(long timeInMillis){
+    public void doCollectData(){
         if(caliData == null){
             return;
         }
@@ -195,10 +195,10 @@ public class SensorHelper implements SensorEventListener {
         Thread dataThread = new Thread(() -> {
             sensorManager.registerListener(this, accSensor, SensorManager.SENSOR_DELAY_NORMAL);
             sensorManager.registerListener(this, gyroSensor, SensorManager.SENSOR_DELAY_NORMAL);
-            long start;
+
             long end = 0;
-            start = System.currentTimeMillis();
-            while(end - start < timeInMillis && Boolean.FALSE.equals(MainActivity.isDCEnd.getValue())){
+            long start = System.currentTimeMillis();
+            while(Boolean.FALSE.equals(MainActivity.isDCEnd.getValue())){
                 int size = audioSensor.read(bufferRecord, 0, bufferRecordSize);
 
                 shortBuffer.put(bufferRecord, 0, size);
@@ -209,8 +209,6 @@ public class SensorHelper implements SensorEventListener {
             stopMic();
 
             makeBreathData(start, end);
-
-            MainActivity.isDCEnd.postValue(true);
         });
         dataThread.start();
     }
