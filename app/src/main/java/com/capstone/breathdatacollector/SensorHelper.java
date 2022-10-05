@@ -265,11 +265,7 @@ public class SensorHelper implements SensorEventListener {
             sensorManager.unregisterListener(this);
             stopMic();
 
-            Toast.makeText(context, "Finish Collecting for Cali", Toast.LENGTH_SHORT).show();
-
             calculateDelay(soundPeakTime);
-
-            Toast.makeText(context, "Finish Calculating Delay for Cali", Toast.LENGTH_SHORT).show();
 
             saveCaliData();
 
