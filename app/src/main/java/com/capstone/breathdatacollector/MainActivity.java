@@ -9,6 +9,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.provider.Settings;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -86,8 +87,9 @@ public class MainActivity extends AppCompatActivity {
                         String str = sensorManager.getBreathData();//수현이 데이터에서 파일에 적을 문자열 받아오기
                         if(str == null){
                             Toast noDataAlarm = Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG);
-                            System.out.println("no string");
-                            return;
+//                            System.out.println("no string");
+//                            return;
+                            Log.d("string is null", "null!");
                         }
                         else{
                             BufferedOutputStream bs = null;
@@ -96,7 +98,7 @@ public class MainActivity extends AppCompatActivity {
 //                            String str = sensorManager.getBreathData();//수현이 데이터에서 파일에 적을 문자열 받아오기
                                 bs.write(str.getBytes());
 
-                                System.out.println("str = " + str);
+                                Log.d("string not null", "str" + str);
                                 bs.close();
                             } catch (IOException e) {
                                 e.getStackTrace();
@@ -124,6 +126,9 @@ public class MainActivity extends AppCompatActivity {
 //                } catch (IOException e) {
 //                    e.getStackTrace();
 //                }
+                isDCEnd.setValue(true);
+                btnDataCollect.setSelected(false);
+                btnDataCollect.setText("START COLLECTING DATA");
                 TextView time = findViewById(R.id.time);
                 time.setText("Collecting time: 60s");
                 mStartForResult.launch(intent);
@@ -143,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
 //                        성립하고, 바로 write를 시작하는데 그 때는 데이터 수집이 막 시작한 때라 모은 데이터가 없다....
                     isDCEnd.setValue(false);
                     //데이터 모으는 메소드 call 추가
-                    sensorManager.doCollectData(60000);
+                    sensorManager.doCollectData();
                     countDownTimer.start();
                 } else {
                     isDCEnd.setValue(true);
@@ -174,9 +179,11 @@ public class MainActivity extends AppCompatActivity {
             public void onChanged(Boolean caliState){
                 btnDataCollect.setEnabled(caliState);
                 if(caliState){
+                    btnCalibrate.setSelected(false);
                     btnCalibrate.setText("START CALIBRATION");
                 }
                 else{
+                    btnCalibrate.setSelected(true);
                     btnCalibrate.setText("STOP CALIBRATION");
                 }
             }
@@ -185,11 +192,13 @@ public class MainActivity extends AppCompatActivity {
             public void onChanged(Boolean DCState){
                 btnCalibrate.setEnabled(DCState);
                 if(DCState){
+                    btnDataCollect.setSelected(false);
                     btnDataCollect.setText("START COLLECTING DATA");
                     TextView time = findViewById(R.id.time);
                     time.setText("Collecting time: 60s");
                 }
                 else{
+                    btnDataCollect.setSelected(true);
                     btnDataCollect.setText("STOP COLLECTING");
                 }
             }
