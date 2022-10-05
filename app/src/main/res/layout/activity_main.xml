@@ -17,7 +17,8 @@
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.620" />
+        app:layout_constraintVertical_bias="0.620"
+        android:backgroundTint="@color/button_background_color" />
 
     <Button
         android:id="@+id/button1"
@@ -29,7 +30,8 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.380" />
+        app:layout_constraintVertical_bias="0.380"
+        android:backgroundTint="@color/button_background_color" />
 
     <TextView
         android:id="@+id/time"

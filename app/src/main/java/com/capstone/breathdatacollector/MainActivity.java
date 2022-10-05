@@ -141,11 +141,13 @@ public class MainActivity extends AppCompatActivity {
 //                        mStartForResult.launch(intent); //여기를 어떻게 할지 고민이 되네. 데이터를 다 받아온 다음에
 //                        해야 데이터를 파일에 write해야 하는데... launch하는 순간 intent(파일 create하는 내용 담음) 조건이
 //                        성립하고, 바로 write를 시작하는데 그 때는 데이터 수집이 막 시작한 때라 모은 데이터가 없다....
+                    btnDataCollect.setPressed(true);
                     isDCEnd.setValue(false);
                     //데이터 모으는 메소드 call 추가
                     sensorManager.doCollectData(60000);
                     countDownTimer.start();
                 } else {
+                    btnDataCollect.setPressed(false);
                     isDCEnd.setValue(true);
                     //데이터 수집 중지 메소드 call 추가
                     countDownTimer.cancel();
@@ -161,10 +163,12 @@ public class MainActivity extends AppCompatActivity {
 //                boolean isBluetoothOn = BluetoothHelper.checkBluetoothEnabled(MainActivity.this);
 //                if(true){ //임시로, 이거 지울거임
                 if (isCaliEnd.getValue()) {
+                    btnCalibrate.setPressed(true);
                     sensorManager.calibrate();
                     isCaliEnd.setValue(false);
                     //데이터 모으는 메소드 call 추가
                 } else {
+                    btnCalibrate.setPressed(false);
                     isCaliEnd.setValue(true);
                     //데이터 수집 중지 메소드 call 추가
                 }
