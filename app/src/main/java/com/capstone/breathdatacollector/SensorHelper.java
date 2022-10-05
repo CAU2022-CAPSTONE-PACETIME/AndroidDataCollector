@@ -107,7 +107,7 @@ public class SensorHelper implements SensorEventListener {
         SharedPreferences sharedPref = context.getSharedPreferences("BreathData", Context.MODE_PRIVATE);
 
         if(sharedPref.contains("CALI")){
-            caliData = CalibrationData.setData(sharedPref.getString("CALI", null));
+            caliData = CalibrationData.setData(sharedPref.getLong("CALI", 0));
         }
     }
 
@@ -466,12 +466,12 @@ public class SensorHelper implements SensorEventListener {
             return "" + peakToPeakDalay;
         }
 
-        public static CalibrationData setData(String str){
-            if(str == null){
+        public static CalibrationData setData(long str){
+            if(str == 0){
                 return null;
             }
 
-            return new CalibrationData(Long.parseLong(str));
+            return new CalibrationData(str);
         }
     }
 
