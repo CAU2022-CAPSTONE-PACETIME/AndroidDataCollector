@@ -71,7 +71,7 @@ public class MainActivity extends AppCompatActivity {
 
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE).setType("text/plain");
-        String fileName = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss")) + ".txt";
+        String fileName = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss")) + ".csv";
         intent.putExtra(Intent.EXTRA_TITLE, fileName);
 
         ActivityResultLauncher<Intent> mStartForResult = registerForActivityResult(
@@ -100,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
                 }
         );
 
-        CountDownTimer countDownTimer = new CountDownTimer(10000, 1000) {
+        CountDownTimer countDownTimer = new CountDownTimer(60000, 1000) {
             public void onTick(long millisUntilFinished) {
                 TextView time = findViewById(R.id.time);
                 time.setText("seconds remaining: " +(millisUntilFinished / 1000));
