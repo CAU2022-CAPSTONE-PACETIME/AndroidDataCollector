@@ -68,18 +68,52 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
-        intent.addCategory(Intent.CATEGORY_OPENABLE).setType("text/csv");
-        String fileName = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss")) + ".csv";
-        intent.putExtra(Intent.EXTRA_TITLE, fileName);
+        Intent intentData = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intentData.addCategory(Intent.CATEGORY_OPENABLE).setType("text/csv");
+        String fileNameData = "Data_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss")) + ".csv";
+        intentData.putExtra(Intent.EXTRA_TITLE, fileNameData);
 
-        ActivityResultLauncher<Intent> mStartForResult = registerForActivityResult(
+        Intent intentCali = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intentData.addCategory(Intent.CATEGORY_OPENABLE).setType("text/csv");
+        String fileNameCali = "Cali_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss")) + ".csv";
+        intentData.putExtra(Intent.EXTRA_TITLE, fileNameCali);
+
+        ActivityResultLauncher<Intent> mStartForResultData = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if(result.getResultCode() == RESULT_OK) {
+
+                    String str = sensorHelper.getBreathData();
+                    if(str == null){
+                        Toast noDataAlarm = Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG);
+                    }
+                    else{
+                        try {
+                            ParcelFileDescriptor pfd = MainActivity.this.getContentResolver().
+                                    openFileDescriptor(result.getData().getData(), "w");
+                            FileOutputStream fileOutputStream =
+                                    new FileOutputStream(pfd.getFileDescriptor());
+                            fileOutputStream.write(str.getBytes());
+                            fileOutputStream.close();
+                            pfd.close();
+                        } catch (FileNotFoundException e) {
+                            e.printStackTrace();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+                if(result.getResultCode() == RESULT_CANCELED){
+                }
+            }
+        );
+
+        ActivityResultLauncher<Intent> mStartForResultCali = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if(result.getResultCode() == RESULT_OK) {
 
-
-                        String str = sensorHelper.getBreathData();
+                        String str = sensorHelper.getCaliData().toString();
                         if(str == null){
                             Toast noDataAlarm = Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG);
                         }
@@ -116,7 +150,7 @@ public class MainActivity extends AppCompatActivity {
                 btnDataCollect.setText("START COLLECTING DATA");
                 TextView time = findViewById(R.id.time);
                 time.setText("Collecting time: 60s");
-                mStartForResult.launch(intent);
+                mStartForResultData.launch(intentData);
             }
         };
 
@@ -131,7 +165,7 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     isDCEnd.setValue(true);
                     countDownTimer.cancel();
-                    mStartForResult.launch(intent);
+                    mStartForResultData.launch(intentData);
                 }
 
             }});
@@ -143,6 +177,7 @@ public class MainActivity extends AppCompatActivity {
                     isCaliEnd.setValue(false);
                 } else {
                     isCaliEnd.setValue(true);
+//                    mStartForResultCali.launch(intentCali); //observe에 넣을거면 여긴 안해도 될거 같긴하네.
                 }
             }});
 
@@ -156,6 +191,7 @@ public class MainActivity extends AppCompatActivity {
                 else{
                     btnCalibrate.setSelected(true);
                     btnCalibrate.setText("STOP CALIBRATION");
+//                    mStartForResultCali.launch(intentCali);
                 }
             }
         });
