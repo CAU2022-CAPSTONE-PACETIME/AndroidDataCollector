@@ -8,9 +8,8 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
-import android.os.Environment;
+import android.os.ParcelFileDescriptor;
 import android.provider.Settings;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -23,8 +22,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Observer;
 
-import java.io.File;
-import java.io.FileWriter;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -39,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        SensorHelper sensorManager = new SensorHelper(MainActivity.this);
+        SensorHelper sensorHelper = new SensorHelper(MainActivity.this);
 
         Button btnDataCollect = findViewById(R.id.button1);
         Button btnCalibrate = findViewById(R.id.button2);
@@ -70,7 +69,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
-        intent.addCategory(Intent.CATEGORY_OPENABLE).setType("text/plain");
+        intent.addCategory(Intent.CATEGORY_OPENABLE).setType("text/csv");
         String fileName = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss")) + ".csv";
         intent.putExtra(Intent.EXTRA_TITLE, fileName);
 
@@ -78,20 +77,25 @@ public class MainActivity extends AppCompatActivity {
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if(result.getResultCode() == RESULT_OK) {
-                        String str = sensorManager.getBreathData();
+
+
+                        String str = sensorHelper.getBreathData();
                         if(str == null){
                             Toast noDataAlarm = Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG);
                         }
-                        else {
-                            File file = new File(getApplicationContext().getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), fileName);
-                            Log.d("WHERE?", getApplicationContext().getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath());
+                        else{
                             try {
-                                FileWriter writer = new FileWriter(file);
-                                writer.write(str);
-                                writer.close();
+                                ParcelFileDescriptor pfd = MainActivity.this.getContentResolver().
+                                        openFileDescriptor(result.getData().getData(), "w");
+                                FileOutputStream fileOutputStream =
+                                        new FileOutputStream(pfd.getFileDescriptor());
+                                fileOutputStream.write(str.getBytes());
+                                fileOutputStream.close();
+                                pfd.close();
+                            } catch (FileNotFoundException e) {
+                                e.printStackTrace();
                             } catch (IOException e) {
-                                Log.d("what!!", e.toString());
-                                e.getStackTrace();
+                                e.printStackTrace();
                             }
                         }
                     }
@@ -99,6 +103,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
         );
+
 
         CountDownTimer countDownTimer = new CountDownTimer(60000, 1000) {
             public void onTick(long millisUntilFinished) {
@@ -121,7 +126,7 @@ public class MainActivity extends AppCompatActivity {
 
                 if (isDCEnd.getValue()) {
                     isDCEnd.setValue(false);
-                    sensorManager.doCollectData();
+                    sensorHelper.doCollectData();
                     countDownTimer.start();
                 } else {
                     isDCEnd.setValue(true);
@@ -134,7 +139,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 if (isCaliEnd.getValue()) {
-                    sensorManager.calibrate();
+                    sensorHelper.calibrate();
                     isCaliEnd.setValue(false);
                 } else {
                     isCaliEnd.setValue(true);
