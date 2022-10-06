@@ -21,7 +21,6 @@ import android.media.MediaRecorder;
 import android.net.Uri;
 import android.provider.Settings;
 import android.util.Log;
-import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -41,7 +40,7 @@ public class SensorHelper implements SensorEventListener {
 
     private AudioRecord audioSensor;
     private SensorManager sensorManager;
-    private BluetoothHelper bluetoothHelper;
+    private final BluetoothHelper bluetoothHelper;
 
     private final Context context;
     private final MainActivity activity;
