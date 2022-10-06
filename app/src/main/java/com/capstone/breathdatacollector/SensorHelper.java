@@ -21,6 +21,7 @@ import android.media.MediaRecorder;
 import android.net.Uri;
 import android.provider.Settings;
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -321,33 +322,38 @@ public class SensorHelper implements SensorEventListener {
             Log.d(TAG, "SOUND PEAK Time: " + soundPeak);
             Log.d(TAG, "IMU   PEAK Time: " + imuPeakTime);
             Log.d(TAG, "DIFF: " + diff);
+
+            activity.runOnUiThread(()->{
+                Toast.makeText(context, "Diff: " + diff , Toast.LENGTH_LONG).show();
+            });
+
             Log.d(TAG, "MAX IDX: " + imuPeakIdx);
 
             this.caliData = new CalibrationData(diff);
-
-            StringBuilder x = new StringBuilder(), y= new StringBuilder(), z= new StringBuilder();
-            for(float[] val : accData){
-                x.append(val[0]).append(',');
-                y.append(val[1]).append(',');
-                z.append(val[2]).append(',');
-            }
-
-            Log.i(TAG, "X: " + x);
-            Log.i(TAG, "Y: " + y);
-            Log.i(TAG, "Z: " + z);
-
-            x = new StringBuilder();
-            y = new StringBuilder();
-            z = new StringBuilder();
-            for(float[] val : gyroData){
-                x.append(val[0]).append(',');
-                y.append(val[1]).append(',');
-                z.append(val[2]).append(',');
-            }
-
-            Log.i(TAG, "X: " + x);
-            Log.i(TAG, "Y: " + y);
-            Log.i(TAG, "Z: " + z);
+//
+//            StringBuilder x = new StringBuilder(), y= new StringBuilder(), z= new StringBuilder();
+//            for(float[] val : accData){
+//                x.append(val[0]).append(',');
+//                y.append(val[1]).append(',');
+//                z.append(val[2]).append(',');
+//            }
+//
+//            Log.i(TAG, "X: " + x);
+//            Log.i(TAG, "Y: " + y);
+//            Log.i(TAG, "Z: " + z);
+//
+//            x = new StringBuilder();
+//            y = new StringBuilder();
+//            z = new StringBuilder();
+//            for(float[] val : gyroData){
+//                x.append(val[0]).append(',');
+//                y.append(val[1]).append(',');
+//                z.append(val[2]).append(',');
+//            }
+//
+//            Log.i(TAG, "X: " + x);
+//            Log.i(TAG, "Y: " + y);
+//            Log.i(TAG, "Z: " + z);
 
             shortBuffer.clear();
             imuTimeStamp.clear();
