@@ -8,8 +8,8 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.os.ParcelFileDescriptor;
 import android.provider.Settings;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -22,7 +22,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Observer;
 
-import java.io.BufferedOutputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -32,14 +32,13 @@ public class MainActivity extends AppCompatActivity {
 
     public static MutableLiveData<Boolean> isCaliEnd = new MutableLiveData<Boolean>(true);
     public static MutableLiveData<Boolean> isDCEnd = new MutableLiveData<Boolean>(true);
-    //    public static MutableLiveData<Boolean> isCaliClicked = new MutableLiveData<Boolean>(false);
-//    public static MutableLiveData<Boolean> isDCClicked = new MutableLiveData<Boolean>(false);
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        SensorHelper sensorManager = new SensorHelper(MainActivity.this);
+        SensorHelper sensorHelper = new SensorHelper(MainActivity.this);
 
         Button btnDataCollect = findViewById(R.id.button1);
         Button btnCalibrate = findViewById(R.id.button2);
@@ -70,38 +69,33 @@ public class MainActivity extends AppCompatActivity {
         }
 
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
-        intent.addCategory(Intent.CATEGORY_OPENABLE).setType("text/plain");
-        String fileName = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss")) + ".txt";
+        intent.addCategory(Intent.CATEGORY_OPENABLE).setType("text/csv");
+        String fileName = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss")) + ".csv";
         intent.putExtra(Intent.EXTRA_TITLE, fileName);
 
-
-        //데이터를 파일에 저장
         ActivityResultLauncher<Intent> mStartForResult = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
-                    //result.getResultCode()를 통하여 결과값 확인
                     if(result.getResultCode() == RESULT_OK) {
-//                        isDCEnd.setValue(false);
-//                        //데이터 모으는 메소드 call 추가
-//                        countDownTimer.start();
-                        String str = sensorManager.getBreathData();//수현이 데이터에서 파일에 적을 문자열 받아오기
+
+
+                        String str = sensorHelper.getBreathData();
                         if(str == null){
                             Toast noDataAlarm = Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG);
-//                            System.out.println("no string");
-//                            return;
-                            Log.d("string is null", "null!");
                         }
                         else{
-                            BufferedOutputStream bs = null;
-                            try{
-                                bs = new BufferedOutputStream(new FileOutputStream(fileName));
-//                            String str = sensorManager.getBreathData();//수현이 데이터에서 파일에 적을 문자열 받아오기
-                                bs.write(str.getBytes());
-
-                                Log.d("string not null", "str" + str);
-                                bs.close();
+                            try {
+                                ParcelFileDescriptor pfd = MainActivity.this.getContentResolver().
+                                        openFileDescriptor(result.getData().getData(), "w");
+                                FileOutputStream fileOutputStream =
+                                        new FileOutputStream(pfd.getFileDescriptor());
+                                fileOutputStream.write(str.getBytes());
+                                fileOutputStream.close();
+                                pfd.close();
+                            } catch (FileNotFoundException e) {
+                                e.printStackTrace();
                             } catch (IOException e) {
-                                e.getStackTrace();
+                                e.printStackTrace();
                             }
                         }
                     }
@@ -110,22 +104,13 @@ public class MainActivity extends AppCompatActivity {
                 }
         );
 
-        CountDownTimer countDownTimer = new CountDownTimer(10000, 1000) {
+
+        CountDownTimer countDownTimer = new CountDownTimer(60000, 1000) {
             public void onTick(long millisUntilFinished) {
                 TextView time = findViewById(R.id.time);
                 time.setText("seconds remaining: " +(millisUntilFinished / 1000));
             }
             public void onFinish() {
-                //stop collecting
-//                BufferedOutputStream bs = null;
-//                try{
-//                    bs = new BufferedOutputStream(new FileOutputStream(fileName));
-//                    String str = new String();//수현이 데이터에서 파일에 적을 문자열 받아오기
-//                    bs.write(str.getBytes());
-//                    bs.close();
-//                } catch (IOException e) {
-//                    e.getStackTrace();
-//                }
                 isDCEnd.setValue(true);
                 btnDataCollect.setSelected(false);
                 btnDataCollect.setText("START COLLECTING DATA");
@@ -138,21 +123,13 @@ public class MainActivity extends AppCompatActivity {
 
         btnDataCollect.setOnClickListener(new View.OnClickListener(){
             @Override public void onClick(View view) {
-//                isDCClicked.setValue(true);
-//                boolean isBluetoothOn = BluetoothHelper.checkBluetoothEnabled(MainActivity.this);
 
-//                if(true){ //임시로, 이거 지울거임
                 if (isDCEnd.getValue()) {
-//                        mStartForResult.launch(intent); //여기를 어떻게 할지 고민이 되네. 데이터를 다 받아온 다음에
-//                        해야 데이터를 파일에 write해야 하는데... launch하는 순간 intent(파일 create하는 내용 담음) 조건이
-//                        성립하고, 바로 write를 시작하는데 그 때는 데이터 수집이 막 시작한 때라 모은 데이터가 없다....
                     isDCEnd.setValue(false);
-                    //데이터 모으는 메소드 call 추가
-                    sensorManager.doCollectData();
+                    sensorHelper.doCollectData();
                     countDownTimer.start();
                 } else {
                     isDCEnd.setValue(true);
-                    //데이터 수집 중지 메소드 call 추가
                     countDownTimer.cancel();
                     mStartForResult.launch(intent);
                 }
@@ -161,17 +138,11 @@ public class MainActivity extends AppCompatActivity {
         btnCalibrate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //click 하면 click 할 때 변하는 변수 추가
-//                isCaliClicked.setValue(true);
-//                boolean isBluetoothOn = BluetoothHelper.checkBluetoothEnabled(MainActivity.this);
-//                if(true){ //임시로, 이거 지울거임
                 if (isCaliEnd.getValue()) {
-                    sensorManager.calibrate();
+                    sensorHelper.calibrate();
                     isCaliEnd.setValue(false);
-                    //데이터 모으는 메소드 call 추가
                 } else {
                     isCaliEnd.setValue(true);
-                    //데이터 수집 중지 메소드 call 추가
                 }
             }});
 
@@ -203,49 +174,5 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
-//        isCaliClicked.observe(this, new Observer<Boolean>() {
-//            @Override
-//            public void onChanged(Boolean caliClickedState) {
-//                if(caliClickedState){
-//                    boolean isBluetoothOn = BluetoothHelper.checkBluetoothEnabled(MainActivity.this);
-//                    if (isBluetoothOn){
-//                        if(isCaliEnd.getValue()){
-//                            isCaliEnd.setValue(false);
-//                            //데이터 모으는 메소드 call 추가
-//                        }
-//                        else{
-//                            isCaliEnd.setValue(true);
-//                            //데이터 수집 중지 메소드 call 추가
-//                        }
-//                    }
-//                    else{
-//                        return;
-//                    }
-//                    isCaliClicked.setValue(false);
-//                }
-//            }
-//        });
-//        isDCClicked.observe(this, new Observer<Boolean>() {
-//            @Override
-//            public void onChanged(Boolean DCClickedState) {
-//                if(DCClickedState){
-//                    boolean isBluetoothOn = BluetoothHelper.checkBluetoothEnabled(MainActivity.this);
-//                    if (isBluetoothOn){
-//                        if(isDCEnd.getValue()){
-//                            isDCEnd.setValue(false);
-//                            //데이터 모으는 메소드 call 추가
-//                        }
-//                        else{
-//                            isDCEnd.setValue(true);
-//                            //데이터 수집 중지 메소드 call 추가
-//                        }
-//                    }
-//                    else{
-//                        return;
-//                    }
-//                    isDCClicked.setValue(false);
-//                }
-//            }
-//        });
     }
 }
