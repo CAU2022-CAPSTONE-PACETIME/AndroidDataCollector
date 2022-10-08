@@ -272,11 +272,12 @@ public class SensorHelper implements SensorEventListener {
             sensorManager.unregisterListener(this);
             stopMic();
 
-            calculateDelay(soundPeakTime, end);
+            if(Boolean.FALSE.equals(MainActivity.isCaliEnd.getValue())){
+                calculateDelay(soundPeakTime, end);
+                saveCaliData();
+                MainActivity.isCaliEnd.postValue(true);
+            }
 
-            saveCaliData();
-
-            MainActivity.isCaliEnd.postValue(true);
         });
         dataThread.start();
     }
