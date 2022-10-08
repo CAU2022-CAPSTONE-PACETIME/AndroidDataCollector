@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.ParcelFileDescriptor;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -26,6 +27,7 @@ public class MainActivity extends AppCompatActivity {
     public static MutableLiveData<Boolean> isCaliEnd = new MutableLiveData<Boolean>(true);
     public static MutableLiveData<Boolean> isDCEnd = new MutableLiveData<Boolean>(true);
 
+    public boolean isOnCreateEnd = false;
 
 //    private ActivityResultLauncher<Intent> mStartForResultData = registerForActivityResult(
 //            new ActivityResultContracts.StartActivityForResult(),
@@ -277,7 +279,7 @@ public class MainActivity extends AppCompatActivity {
                     isDCEnd.setValue(true);
                     countDownTimer.cancel();
                     if(sensorHelper.getBreathData() == null){
-                    Toast noDataAlarm = Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG);
+                        Toast noDataAlarm = Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG);
                         noDataAlarm.show();
                     }
                     else{
@@ -305,13 +307,17 @@ public class MainActivity extends AppCompatActivity {
                     btnCalibrate.setSelected(false);
                     btnCalibrate.setText("START CALIBRATION");
                     if(sensorHelper.getCaliData().toString() == null){
-                        Toast noDataAlarm = Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG);
-                        noDataAlarm.show();
+                        if(isOnCreateEnd){
 
-//                        Log.d("CALIDATANULL", "CaliData = ");
+                            Toast noDataAlarm = Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG);
+                            noDataAlarm.show();
+
+                            Log.d("CALIDATANULL", "CaliData = ");
+                        }
+                        isOnCreateEnd = true;
                     }
                     else{
-//                        Log.d("CALIDATANOTNULL", "CaliData = " + sensorHelper.getCaliData());
+                        Log.d("CALIDATANOTNULL", "CaliData = " + sensorHelper.getCaliData());
                         mStartForResultCali.launch(intentCali);
                     }
                 }
