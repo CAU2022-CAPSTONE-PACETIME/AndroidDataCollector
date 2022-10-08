@@ -1,14 +1,22 @@
 package com.capstone.breathdatacollector;
 
+import android.Manifest;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.ParcelFileDescriptor;
+import android.provider.Settings;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.MutableLiveData;
@@ -25,7 +33,6 @@ public class MainActivity extends AppCompatActivity {
     public static MutableLiveData<Boolean> isCaliEnd = new MutableLiveData<Boolean>(true);
     public static MutableLiveData<Boolean> isDCEnd = new MutableLiveData<Boolean>(true);
 
-    public SensorHelper sensorHelper = new SensorHelper(MainActivity.this);
 
 //    private ActivityResultLauncher<Intent> mStartForResultData = registerForActivityResult(
 //            new ActivityResultContracts.StartActivityForResult(),
@@ -154,33 +161,35 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        SensorHelper sensorHelper = new SensorHelper(MainActivity.this);
+
         Button btnDataCollect = findViewById(R.id.button1);
         Button btnCalibrate = findViewById(R.id.button2);
 
-//        if(this.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED){
-//            ActivityResultLauncher<String> permissionLauncher = this.registerForActivityResult(new ActivityResultContracts.RequestPermission(), (isGranted) -> {
-//                if (!isGranted) {
-//                    new AlertDialog.Builder(this.getApplicationContext())
-//                            .setTitle("저장소 접근 권한")
-//                            .setMessage("앱을 사용하시려면, 저장소 권한을 허용해 주세요.")
-//                            .setPositiveButton("확인", (DialogInterface dialog, int which)->{
-//                                        Intent intentAuth = new Intent();
-//                                        intentAuth.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-//                                        Uri uri = Uri.fromParts("package",
-//                                                BuildConfig.APPLICATION_ID, null);
-//                                        intentAuth.setData(uri);
-//                                        intentAuth.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-//                                        this.startActivity(intentAuth);
-//                                    }
-//                            )
-//                            .create()
-//                            .show();
-//                }
-//            });
-//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-//                permissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE);
-//            }
-//        }
+        if(this.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED){
+            ActivityResultLauncher<String> permissionLauncher = this.registerForActivityResult(new ActivityResultContracts.RequestPermission(), (isGranted) -> {
+                if (!isGranted) {
+                    new AlertDialog.Builder(this.getApplicationContext())
+                            .setTitle("저장소 접근 권한")
+                            .setMessage("앱을 사용하시려면, 저장소 권한을 허용해 주세요.")
+                            .setPositiveButton("확인", (DialogInterface dialog, int which)->{
+                                        Intent intentAuth = new Intent();
+                                        intentAuth.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                                        Uri uri = Uri.fromParts("package",
+                                                BuildConfig.APPLICATION_ID, null);
+                                        intentAuth.setData(uri);
+                                        intentAuth.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                        this.startActivity(intentAuth);
+                                    }
+                            )
+                            .create()
+                            .show();
+                }
+            });
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                permissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+            }
+        }
 
         Intent intentData = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intentData.addCategory(Intent.CATEGORY_OPENABLE).setType("text/csv");
