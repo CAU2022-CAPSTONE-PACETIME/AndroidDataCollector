@@ -272,7 +272,7 @@ public class SensorHelper implements SensorEventListener {
             sensorManager.unregisterListener(this);
             stopMic();
 
-            calculateDelay(soundPeakTime);
+            calculateDelay(soundPeakTime, end);
 
             saveCaliData();
 
@@ -285,7 +285,7 @@ public class SensorHelper implements SensorEventListener {
         context.getSharedPreferences("BreathData", Context.MODE_PRIVATE)
                 .edit()
                 .remove("CALI")
-                .putLong("CALI", caliData.peakToPeakDalay)
+                .putLong("CALI", caliData.ppDelay)
                 .apply();
     }
 
@@ -298,7 +298,7 @@ public class SensorHelper implements SensorEventListener {
         }
     }
 
-    private void calculateDelay(long soundPeak){
+    private void calculateDelay(long soundPeak, long soundEnd){
         Optional<float[]> aboutMax = accData.subList(3, accData.size()-1).stream().max((float[] floats, float[] t1) -> {
                     float val1 = floats[0]*floats[0] + floats[1]*floats[1] + floats[2]*floats[2];
                     float val2 = t1[0] * t1[0] + t1[1] * t1[1] + t1[2]*t1[2];
@@ -316,20 +316,36 @@ public class SensorHelper implements SensorEventListener {
             long imuPeakTime = imuTimeStamp.get(imuPeakIdx);
             long diff = soundPeak - imuPeakTime;
 
+            Log.i(TAG, "SOUND Size: " + shortBuffer.array().length);
+            Log.i(TAG, "ACC Size: " + accData.size());
+            Log.i(TAG, "GYRO Size: " + gyroData.size());
+
             Log.d(TAG, "SOUND PEAK Value: " + shortBuffer.get(0));
             Log.d(TAG, "IMU   PEAK Value: " + Arrays.toString(accData.get(imuPeakIdx)));
 
-            Log.d(TAG, "SOUND PEAK Time: " + soundPeak);
-            Log.d(TAG, "IMU   PEAK Time: " + imuPeakTime);
+            Log.d(TAG, "SOUND Start Time: " + soundPeak);
+            Log.d(TAG, "IMU   Start Time: " + imuTimeStamp.get(imuPeakIdx));
+
+            Log.d(TAG, "SOUND End Time: " + soundEnd);
+            Log.d(TAG, "IMU   End Time: " + imuTimeStamp.get(imuTimeStamp.size()-1));
             Log.d(TAG, "DIFF: " + diff);
 
-            activity.runOnUiThread(()->{
-                Toast.makeText(context, "Diff: " + diff , Toast.LENGTH_LONG).show();
-            });
+            activity.runOnUiThread(()-> Toast.makeText(context, "Diff: " + diff , Toast.LENGTH_LONG).show());
 
             Log.d(TAG, "MAX IDX: " + imuPeakIdx);
 
-            this.caliData = new CalibrationData(diff);
+
+            List<Short> soundData = new ArrayList<>();
+
+            int cnt = 0;
+            for(short s : shortBuffer.array()){
+                if(cnt >= shortBuffer.array().length){
+                    break;
+                }
+                soundData.add(s);
+            }
+
+            this.caliData = new CalibrationData(accData, gyroData, soundData, imuTimeStamp, diff);
 //
 //            StringBuilder x = new StringBuilder(), y= new StringBuilder(), z= new StringBuilder();
 //            for(float[] val : accData){
@@ -386,7 +402,7 @@ public class SensorHelper implements SensorEventListener {
     }
 
     private void makeBreathData(long soundStartTime, long soundEndTime){
-        final long imuStartTime = soundStartTime - caliData.getPeakToPeakDalay();
+        final long imuStartTime = soundStartTime - caliData.getPpDelay();
 
         Log.i(TAG, "SOUND: " + shortBuffer.array().length);
         Log.i(TAG, "ACC: " + accData.size());
@@ -422,85 +438,93 @@ public class SensorHelper implements SensorEventListener {
                 accData.subList(imuStartTimeIdx, accData.size()-1)
                 , gyroData.subList(imuStartTimeIdx, gyroData.size() - 1)
                 , soundData
+                ,imuTimeStamp.subList(imuStartTimeIdx, imuTimeStamp.size()-1)
                 );
     }
 
     static class BreathData{
         List<float[]> acc, gyro;
         List<Short> sound;
-        BreathData(List<float[]> acc, List<float[]>gyro, List<Short> sound){
+        List<Long> ts;
+        BreathData(List<float[]> acc, List<float[]>gyro, List<Short> sound, List<Long> ts){
             this.acc = acc;
             this.gyro = gyro;
             this.sound = sound;
+            this.ts = ts;
         }
 
         @NonNull
         @Override
         public String toString() {
             StringBuilder ret = new StringBuilder();
-            ret.append("accx,");
-            for(float[] data : acc){
-                ret.append(data[0])
-                        .append(",");
-            }
-            ret.append("\naccy,");
-            for(float[] data : acc){
-                ret.append(data[1])
-                        .append(",");
-            }
-            ret.append("\naccz,");
-            for(float[] data : acc){
-                ret.append(data[2])
-                        .append(",");
-            }
-            ret.append("\ngyrox,");
-            for(float[] data : gyro){
-                ret.append(data[0])
-                        .append(",");
-            }
-            ret.append("\ngyroy,");
-            for(float[] data : gyro){
-                ret.append(data[1])
-                        .append(",");
-            }
-            ret.append("\ngyroz,");
-            for(float[] data : gyro){
-                ret.append(data[2])
-                        .append(",");
+            ret.append("sound,")
+                    .append("ts")
+                    .append("accx,")
+                    .append("accy,")
+                    .append("accz,")
+                    .append("gyrox,")
+                    .append("gyroy,")
+                    .append("gyroz");
+
+            for(int i = 0; ( i < sound.size() || i < acc.size() || i < gyro.size() ) ; i++){
+                ret.append("\n");
+                ret.append(sound.get(i));
+
+                ret.append(",");
+                if(i < ts.size()){
+                    ret.append(ts.get(i));
+                }
+
+                for(int j = 0; j < 3; j++){
+                    ret.append(",");
+                    if(i < acc.size()){
+                        ret.append(acc.get(i)[j]);
+                    }
+                }
+                for(int j = 0; j < 3; j++){
+                    ret.append(",");
+                    if(i < gyro.size()){
+                        ret.append(gyro.get(i)[j]);
+                    }
+                }
             }
 
-            ret.append(";\nsound,");
-            for(short data : sound){
-                ret.append(data)
-                        .append(",");
-            }
             return ret.toString();
         }
     }
 
-    static class CalibrationData{
-        long peakToPeakDalay;
+    static class CalibrationData extends BreathData{
+        long ppDelay;
 
-        CalibrationData(long peakToPeakDalay){
-            this.peakToPeakDalay = peakToPeakDalay;
+        CalibrationData(List<float[]> acc, List<float[]>gyro, List<Short> sound, List<Long> ts, long ppDelay){
+            super(acc, gyro, sound, ts);
+            this.ppDelay = ppDelay;
         }
 
-        long getPeakToPeakDalay(){
-            return peakToPeakDalay;
+        private CalibrationData(long ppDelay){
+            super(null, null, null, null);
+            this.ppDelay = ppDelay;
+        }
+
+        static CalibrationData setData(long ppDelay){
+            return new CalibrationData(ppDelay);
+        }
+
+        long getPpDelay(){
+            return ppDelay;
         }
 
         @NonNull
         @Override
         public String toString() {
-            return "" + peakToPeakDalay;
-        }
-
-        public static CalibrationData setData(long str){
-            if(str == 0){
-                return null;
+            String ret;
+            if(acc == null){
+                ret = "" + ppDelay;
             }
-
-            return new CalibrationData(str);
+            else{
+                ret = super.toString();
+            }
+            return ret;
         }
     }
 
