@@ -263,7 +263,7 @@ public class MainActivity extends AppCompatActivity {
 //                    String fileNameData = "Data_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss")) + ".csv";
 //                    intentData.putExtra(Intent.EXTRA_TITLE, fileNameData);
 //                    mStartForResultData.launch(intentData);
-//                }
+//                } //1, 2 주석 지우고 3 (if,else) 주석 넣어봐,   여기가 1
             }
         };
 
@@ -286,7 +286,7 @@ public class MainActivity extends AppCompatActivity {
 //                        String fileNameData = "Data_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss")) + ".csv";
 //                        intentData.putExtra(Intent.EXTRA_TITLE, fileNameData);
 //                        mStartForResultData.launch(intentData);
-//                    }
+//                    } // 여기가 2
                 }
 
             }});
@@ -347,7 +347,7 @@ public class MainActivity extends AppCompatActivity {
                         String fileNameData = "Data_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss")) + ".csv";
                         intentData.putExtra(Intent.EXTRA_TITLE, fileNameData);
                         mStartForResultData.launch(intentData);
-                    }
+                    } //여기 if~else 총 9줄이 3
                 }
                 else{
                     btnDataCollect.setSelected(true);
