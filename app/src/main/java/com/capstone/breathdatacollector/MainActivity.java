@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.ParcelFileDescriptor;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -315,12 +314,12 @@ public class MainActivity extends AppCompatActivity {
                             Toast noDataAlarm = Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG);
                             noDataAlarm.show();
 
-                            Log.d("CALIDATANULL", "CaliData = ");
+//                            Log.d("CALIDATANULL", "CaliData = ");
                         }
                         isOnCreateEnd = true;
                     }
                     else{
-                        Log.d("CALIDATANOTNULL", "CaliData = " + sensorHelper.getCaliData());
+//                        Log.d("CALIDATANOTNULL", "CaliData = " + sensorHelper.getCaliData());
                         String fileNameCali = "Cali_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss")) + ".csv";
                         intentCali.putExtra(Intent.EXTRA_TITLE, fileNameCali);
                         mStartForResultCali.launch(intentCali);
