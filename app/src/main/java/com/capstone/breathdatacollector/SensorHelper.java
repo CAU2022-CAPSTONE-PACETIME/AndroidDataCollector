@@ -110,9 +110,7 @@ public class SensorHelper implements SensorEventListener {
     private void setCaliDataBySharedPref(Context context){
         SharedPreferences sharedPref = context.getSharedPreferences("BreathData", Context.MODE_PRIVATE);
 
-        if(sharedPref.contains("CALI")){
-            caliData = CalibrationData.setData(sharedPref.getLong("CALI", 0));
-        }
+        caliData = CalibrationData.setData(sharedPref.getLong("CALI", 0));
     }
 
     private void setSensors() {
@@ -240,8 +238,8 @@ public class SensorHelper implements SensorEventListener {
         Thread dataThread = new Thread(() -> {
             caliData.clearData();
 
-            sensorManager.registerListener(this, accSensor, SensorManager.SENSOR_DELAY_NORMAL);
-            sensorManager.registerListener(this, gyroSensor, SensorManager.SENSOR_DELAY_NORMAL);
+            sensorManager.registerListener(this, accSensor, 5000);
+            sensorManager.registerListener(this, gyroSensor, 5000);
             boolean isRecordStart = false;
             long start = -1L;
             long end = 0;
@@ -293,7 +291,6 @@ public class SensorHelper implements SensorEventListener {
     }
 
     private void stopMic(){
-        shortBuffer.position(0);
         if(audioSensor != null){
             audioSensor.stop();
             audioSensor.release();
@@ -319,7 +316,7 @@ public class SensorHelper implements SensorEventListener {
             long imuPeakTime = imuTimeStamp.get(imuPeakIdx);
             long diff = soundPeak - imuPeakTime;
 
-            Log.i(TAG, "SOUND Size: " + shortBuffer.array().length);
+            Log.i(TAG, "SOUND Size: " + shortBuffer.position());
             Log.i(TAG, "ACC Size: " + accData.size());
             Log.i(TAG, "GYRO Size: " + gyroData.size());
 
@@ -342,7 +339,7 @@ public class SensorHelper implements SensorEventListener {
 
             int cnt = 0;
             for(short s : shortBuffer.array()){
-                if(cnt >= shortBuffer.array().length){
+                if(cnt >= shortBuffer.position()){
                     break;
                 }
                 soundData.add(s);
@@ -407,7 +404,7 @@ public class SensorHelper implements SensorEventListener {
     private void makeBreathData(long soundStartTime, long soundEndTime){
         final long imuStartTime = soundStartTime - caliData.getPpDelay();
 
-        Log.i(TAG, "SOUND: " + shortBuffer.array().length);
+        Log.i(TAG, "SOUND: " + shortBuffer.position());
         Log.i(TAG, "ACC: " + accData.size());
         Log.i(TAG, "GYRO: " + gyroData.size());
 
@@ -431,7 +428,7 @@ public class SensorHelper implements SensorEventListener {
 
         int cnt = 0;
         for(short s : shortBuffer.array()){
-            if(cnt >= shortBuffer.array().length - minusCnt){
+            if(cnt >= shortBuffer.position() - minusCnt){
                 break;
             }
             soundData.add(s);
@@ -450,10 +447,12 @@ public class SensorHelper implements SensorEventListener {
         List<Short> sound;
         List<Long> ts;
         BreathData(List<float[]> acc, List<float[]>gyro, List<Short> sound, List<Long> ts){
-            this.acc = acc;
-            this.gyro = gyro;
-            this.sound = sound;
-            this.ts = ts;
+            if(acc != null){
+                this.acc = new ArrayList<>(acc);
+                this.gyro = new ArrayList<>(gyro);
+                this.sound = new ArrayList<>(sound);
+                this.ts = new ArrayList<>(ts);
+            }
         }
 
         @NonNull
