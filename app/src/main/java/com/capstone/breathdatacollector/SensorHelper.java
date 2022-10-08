@@ -272,7 +272,7 @@ public class SensorHelper implements SensorEventListener {
             sensorManager.unregisterListener(this);
             stopMic();
 
-            calculateDelay(soundPeakTime);
+            calculateDelay(soundPeakTime, end);
 
             saveCaliData();
 
@@ -298,7 +298,7 @@ public class SensorHelper implements SensorEventListener {
         }
     }
 
-    private void calculateDelay(long soundPeak){
+    private void calculateDelay(long soundPeak, long soundEnd){
         Optional<float[]> aboutMax = accData.subList(3, accData.size()-1).stream().max((float[] floats, float[] t1) -> {
                     float val1 = floats[0]*floats[0] + floats[1]*floats[1] + floats[2]*floats[2];
                     float val2 = t1[0] * t1[0] + t1[1] * t1[1] + t1[2]*t1[2];
@@ -323,8 +323,11 @@ public class SensorHelper implements SensorEventListener {
             Log.d(TAG, "SOUND PEAK Value: " + shortBuffer.get(0));
             Log.d(TAG, "IMU   PEAK Value: " + Arrays.toString(accData.get(imuPeakIdx)));
 
-            Log.d(TAG, "SOUND PEAK Time: " + soundPeak);
-            Log.d(TAG, "IMU   PEAK Time: " + imuPeakTime);
+            Log.d(TAG, "SOUND Start Time: " + soundPeak);
+            Log.d(TAG, "IMU   Start Time: " + imuTimeStamp.get(imuPeakIdx));
+
+            Log.d(TAG, "SOUND End Time: " + soundEnd);
+            Log.d(TAG, "IMU   End Time: " + imuTimeStamp.get(imuTimeStamp.size()-1));
             Log.d(TAG, "DIFF: " + diff);
 
             activity.runOnUiThread(()-> Toast.makeText(context, "Diff: " + diff , Toast.LENGTH_LONG).show());
@@ -342,7 +345,7 @@ public class SensorHelper implements SensorEventListener {
                 soundData.add(s);
             }
 
-            this.caliData = new CalibrationData(accData, gyroData, soundData, diff);
+            this.caliData = new CalibrationData(accData, gyroData, soundData, imuTimeStamp, diff);
 //
 //            StringBuilder x = new StringBuilder(), y= new StringBuilder(), z= new StringBuilder();
 //            for(float[] val : accData){
@@ -435,16 +438,19 @@ public class SensorHelper implements SensorEventListener {
                 accData.subList(imuStartTimeIdx, accData.size()-1)
                 , gyroData.subList(imuStartTimeIdx, gyroData.size() - 1)
                 , soundData
+                ,imuTimeStamp.subList(imuStartTimeIdx, imuTimeStamp.size()-1)
                 );
     }
 
     static class BreathData{
         List<float[]> acc, gyro;
         List<Short> sound;
-        BreathData(List<float[]> acc, List<float[]>gyro, List<Short> sound){
+        List<Long> ts;
+        BreathData(List<float[]> acc, List<float[]>gyro, List<Short> sound, List<Long> ts){
             this.acc = acc;
             this.gyro = gyro;
             this.sound = sound;
+            this.ts = ts;
         }
 
         @NonNull
@@ -452,6 +458,7 @@ public class SensorHelper implements SensorEventListener {
         public String toString() {
             StringBuilder ret = new StringBuilder();
             ret.append("sound,")
+                    .append("ts")
                     .append("accx,")
                     .append("accy,")
                     .append("accz,")
@@ -462,6 +469,12 @@ public class SensorHelper implements SensorEventListener {
             for(int i = 0; ( i < sound.size() || i < acc.size() || i < gyro.size() ) ; i++){
                 ret.append("\n");
                 ret.append(sound.get(i));
+
+                ret.append(",");
+                if(i < ts.size()){
+                    ret.append(ts.get(i));
+                }
+
                 for(int j = 0; j < 3; j++){
                     ret.append(",");
                     if(i < acc.size()){
@@ -483,13 +496,13 @@ public class SensorHelper implements SensorEventListener {
     static class CalibrationData extends BreathData{
         long ppDelay;
 
-        CalibrationData(List<float[]> acc, List<float[]>gyro, List<Short> sound, long ppDelay){
-            super(acc, gyro, sound);
+        CalibrationData(List<float[]> acc, List<float[]>gyro, List<Short> sound, List<Long> ts, long ppDelay){
+            super(acc, gyro, sound, ts);
             this.ppDelay = ppDelay;
         }
 
         private CalibrationData(long ppDelay){
-            super(null, null, null);
+            super(null, null, null, null);
             this.ppDelay = ppDelay;
         }
 
