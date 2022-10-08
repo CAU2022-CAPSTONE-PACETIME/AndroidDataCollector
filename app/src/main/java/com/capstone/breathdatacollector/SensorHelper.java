@@ -238,6 +238,8 @@ public class SensorHelper implements SensorEventListener {
         }
 
         Thread dataThread = new Thread(() -> {
+            caliData.clearData();
+
             sensorManager.registerListener(this, accSensor, SensorManager.SENSOR_DELAY_NORMAL);
             sensorManager.registerListener(this, gyroSensor, SensorManager.SENSOR_DELAY_NORMAL);
             boolean isRecordStart = false;
@@ -272,11 +274,12 @@ public class SensorHelper implements SensorEventListener {
             sensorManager.unregisterListener(this);
             stopMic();
 
-            calculateDelay(soundPeakTime, end);
+            if(Boolean.FALSE.equals(MainActivity.isCaliEnd.getValue())){
+                calculateDelay(soundPeakTime, end);
+                saveCaliData();
+                MainActivity.isCaliEnd.postValue(true);
+            }
 
-            saveCaliData();
-
-            MainActivity.isCaliEnd.postValue(true);
         });
         dataThread.start();
     }
@@ -495,6 +498,13 @@ public class SensorHelper implements SensorEventListener {
 
     static class CalibrationData extends BreathData{
         long ppDelay;
+
+        void clearData(){
+            this.acc.clear();
+            this.gyro.clear();
+            this.sound.clear();
+            this.ts.clear();
+        }
 
         CalibrationData(List<float[]> acc, List<float[]>gyro, List<Short> sound, List<Long> ts, long ppDelay){
             super(acc, gyro, sound, ts);
