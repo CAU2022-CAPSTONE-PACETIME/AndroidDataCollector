@@ -500,10 +500,10 @@ public class SensorHelper implements SensorEventListener {
         long ppDelay;
 
         void clearData(){
-            this.acc.clear();
-            this.gyro.clear();
-            this.sound.clear();
-            this.ts.clear();
+            this.acc = null;
+            this.gyro= null;
+            this.sound= null;
+            this.ts= null;
         }
 
         CalibrationData(List<float[]> acc, List<float[]>gyro, List<Short> sound, List<Long> ts, long ppDelay){
