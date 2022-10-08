@@ -197,8 +197,8 @@ public class SensorHelper implements SensorEventListener {
         }
 
         Thread dataThread = new Thread(() -> {
-            sensorManager.registerListener(this, accSensor, SensorManager.SENSOR_DELAY_NORMAL);
-            sensorManager.registerListener(this, gyroSensor, SensorManager.SENSOR_DELAY_NORMAL);
+            sensorManager.registerListener(this, accSensor, 5000);
+            sensorManager.registerListener(this, gyroSensor, 5000);
 
             long end = 0;
             long start = System.currentTimeMillis();
@@ -519,7 +519,7 @@ public class SensorHelper implements SensorEventListener {
         public String toString() {
             String ret;
             if(acc == null){
-                ret = "" + ppDelay;
+                ret = null;
             }
             else{
                 ret = super.toString();
