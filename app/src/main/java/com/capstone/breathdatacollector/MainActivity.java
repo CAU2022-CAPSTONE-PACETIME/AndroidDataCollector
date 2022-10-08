@@ -244,7 +244,7 @@ public class MainActivity extends AppCompatActivity {
         intentCali.addCategory(Intent.CATEGORY_OPENABLE).setType("text/csv");
 
 
-        CountDownTimer countDownTimer = new CountDownTimer(60000, 1000) {
+        CountDownTimer countDownTimer = new CountDownTimer(10000, 1000) {
             public void onTick(long millisUntilFinished) {
                 TextView time = findViewById(R.id.time);
                 time.setText("seconds remaining: " +(millisUntilFinished / 1000));
@@ -255,15 +255,15 @@ public class MainActivity extends AppCompatActivity {
                 btnDataCollect.setText("START COLLECTING DATA");
                 TextView time = findViewById(R.id.time);
                 time.setText("Collecting time: 60s");
-                if(sensorHelper.getBreathData() == null){
-                    Toast noDataAlarm = Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG);
-                    noDataAlarm.show();
-                }
-                else{
-                    String fileNameData = "Data_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss")) + ".csv";
-                    intentData.putExtra(Intent.EXTRA_TITLE, fileNameData);
-                    mStartForResultData.launch(intentData);
-                }
+//                if(sensorHelper.getBreathData() == null){
+//                    Toast noDataAlarm = Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG);
+//                    noDataAlarm.show();
+//                }
+//                else{
+//                    String fileNameData = "Data_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss")) + ".csv";
+//                    intentData.putExtra(Intent.EXTRA_TITLE, fileNameData);
+//                    mStartForResultData.launch(intentData);
+//                }
             }
         };
 
@@ -278,15 +278,15 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     isDCEnd.setValue(true);
                     countDownTimer.cancel();
-                    if(sensorHelper.getBreathData() == null){
-                        Toast noDataAlarm = Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG);
-                        noDataAlarm.show();
-                    }
-                    else{
-                        String fileNameData = "Data_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss")) + ".csv";
-                        intentData.putExtra(Intent.EXTRA_TITLE, fileNameData);
-                        mStartForResultData.launch(intentData);
-                    }
+//                    if(sensorHelper.getBreathData() == null){
+//                        Toast noDataAlarm = Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG);
+//                        noDataAlarm.show();
+//                    }
+//                    else{
+//                        String fileNameData = "Data_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss")) + ".csv";
+//                        intentData.putExtra(Intent.EXTRA_TITLE, fileNameData);
+//                        mStartForResultData.launch(intentData);
+//                    }
                 }
 
             }});
@@ -339,6 +339,15 @@ public class MainActivity extends AppCompatActivity {
                     btnDataCollect.setText("START COLLECTING DATA");
                     TextView time = findViewById(R.id.time);
                     time.setText("Collecting time: 60s");
+                    if(sensorHelper.getBreathData() == null){
+                        Toast noDataAlarm = Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG);
+                        noDataAlarm.show();
+                    }
+                    else{
+                        String fileNameData = "Data_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss")) + ".csv";
+                        intentData.putExtra(Intent.EXTRA_TITLE, fileNameData);
+                        mStartForResultData.launch(intentData);
+                    }
                 }
                 else{
                     btnDataCollect.setSelected(true);
