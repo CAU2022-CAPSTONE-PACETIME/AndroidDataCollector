@@ -519,7 +519,7 @@ public class SensorHelper implements SensorEventListener {
         public String toString() {
             String ret;
             if(acc == null){
-                ret = "" + ppDelay;
+                ret = null;
             }
             else{
                 ret = super.toString();
