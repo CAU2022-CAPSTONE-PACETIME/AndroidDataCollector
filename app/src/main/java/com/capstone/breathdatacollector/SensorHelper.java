@@ -461,7 +461,7 @@ public class SensorHelper implements SensorEventListener {
         public String toString() {
             StringBuilder ret = new StringBuilder();
             ret.append("sound,")
-                    .append("ts")
+                    .append("ts,")
                     .append("accx,")
                     .append("accy,")
                     .append("accz,")
@@ -529,6 +529,9 @@ public class SensorHelper implements SensorEventListener {
         public String toString() {
             String ret;
             if(acc == null){
+                ret = null;
+            }
+            else if(acc.size() == 0){
                 ret = null;
             }
             else{
