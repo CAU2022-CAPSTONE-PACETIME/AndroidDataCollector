@@ -225,6 +225,8 @@ public class BluetoothHelper {
             Toast.makeText(context, "Headset isn't connected", Toast.LENGTH_LONG).show();
 
             return false;
+        }else{
+            Toast.makeText(context, "Headset connected", Toast.LENGTH_LONG).show();
         }
 
         if(headset.getConnectedDevices() == null){
