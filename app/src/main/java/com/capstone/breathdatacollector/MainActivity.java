@@ -29,6 +29,8 @@ public class MainActivity extends AppCompatActivity {
 
     public boolean isOnCreateEnd = false;
 
+    public Intent intentData;
+    public Intent intentCali;
 //    private ActivityResultLauncher<Intent> mStartForResultData = registerForActivityResult(
 //            new ActivityResultContracts.StartActivityForResult(),
 //            result -> {
@@ -235,15 +237,12 @@ public class MainActivity extends AppCompatActivity {
             }
         );
 
-        Intent intentData = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intentData = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intentData.addCategory(Intent.CATEGORY_OPENABLE).setType("text/csv");
-        String fileNameData = "Data_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss")) + ".csv";
-        intentData.putExtra(Intent.EXTRA_TITLE, fileNameData);
 
-        Intent intentCali = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+
+        intentCali = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intentCali.addCategory(Intent.CATEGORY_OPENABLE).setType("text/csv");
-        String fileNameCali = "Cali_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss")) + ".csv";
-        intentCali.putExtra(Intent.EXTRA_TITLE, fileNameCali);
 
 
         CountDownTimer countDownTimer = new CountDownTimer(60000, 1000) {
@@ -262,6 +261,8 @@ public class MainActivity extends AppCompatActivity {
                     noDataAlarm.show();
                 }
                 else{
+                    String fileNameData = "Data_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss")) + ".csv";
+                    intentData.putExtra(Intent.EXTRA_TITLE, fileNameData);
                     mStartForResultData.launch(intentData);
                 }
             }
@@ -283,6 +284,8 @@ public class MainActivity extends AppCompatActivity {
                         noDataAlarm.show();
                     }
                     else{
+                        String fileNameData = "Data_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss")) + ".csv";
+                        intentData.putExtra(Intent.EXTRA_TITLE, fileNameData);
                         mStartForResultData.launch(intentData);
                     }
                 }
@@ -318,6 +321,8 @@ public class MainActivity extends AppCompatActivity {
                     }
                     else{
                         Log.d("CALIDATANOTNULL", "CaliData = " + sensorHelper.getCaliData());
+                        String fileNameCali = "Cali_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss")) + ".csv";
+                        intentCali.putExtra(Intent.EXTRA_TITLE, fileNameCali);
                         mStartForResultCali.launch(intentCali);
                     }
                 }
