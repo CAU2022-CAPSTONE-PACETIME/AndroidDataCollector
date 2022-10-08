@@ -346,7 +346,7 @@ public class SensorHelper implements SensorEventListener {
                 cnt++;
             }
 
-            this.caliData = new CalibrationData(accData, gyroData, soundData, imuTimeStamp, diff);
+            this.caliData = new CalibrationData(accData.subList(imuPeakIdx, accData.size()-1), gyroData.subList(imuPeakIdx, gyroData.size()-1), soundData, imuTimeStamp, diff);
 //
 //            StringBuilder x = new StringBuilder(), y= new StringBuilder(), z= new StringBuilder();
 //            for(float[] val : accData){
