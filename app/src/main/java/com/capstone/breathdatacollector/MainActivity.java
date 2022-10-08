@@ -1,16 +1,10 @@
 package com.capstone.breathdatacollector;
 
-import android.Manifest;
-import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.ParcelFileDescriptor;
-import android.provider.Settings;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -94,67 +88,70 @@ public class MainActivity extends AppCompatActivity {
 //            }
 //    );
 
-    private void mStartForResultData(Intent intentData, String strData){
-        if(strData == null){
-            Toast noDataAlarm = Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG);
-            return;
-        }
-        else{
-            registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                result -> {
-                    if(result.getResultCode() == RESULT_OK) {
-                        try {
-                            ParcelFileDescriptor pfd = MainActivity.this.getContentResolver().
-                                    openFileDescriptor(result.getData().getData(), "w");
-                            FileOutputStream fileOutputStream =
-                                    new FileOutputStream(pfd.getFileDescriptor());
-                            fileOutputStream.write(strData.getBytes());
-                            fileOutputStream.close();
-                            pfd.close();
-                        } catch (FileNotFoundException e) {
-                            e.printStackTrace();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                    if(result.getResultCode() == RESULT_CANCELED){
-                    }
-                }
-            ).launch(intentData);
-        }
-    }
+    private ActivityResultLauncher<Intent> mStartForResultData;
+    private ActivityResultLauncher<Intent> mStartForResultCali;
 
-    private void mStartForResultCali(Intent intentCali, String strCali){
-        if(strCali == null){
-            Toast noDataAlarm = Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG);
-            return;
-        }
-        else{
-            registerForActivityResult(
-                    new ActivityResultContracts.StartActivityForResult(),
-                    result -> {
-                        if(result.getResultCode() == RESULT_OK) {
-                            try {
-                                ParcelFileDescriptor pfd = MainActivity.this.getContentResolver().
-                                        openFileDescriptor(result.getData().getData(), "w");
-                                FileOutputStream fileOutputStream =
-                                        new FileOutputStream(pfd.getFileDescriptor());
-                                fileOutputStream.write(strCali.getBytes());
-                                fileOutputStream.close();
-                                pfd.close();
-                            } catch (FileNotFoundException e) {
-                                e.printStackTrace();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                        if(result.getResultCode() == RESULT_CANCELED){
-                        }
-                    }
-            ).launch(intentCali);
-        }
-    }
+//    private void mStartForResultData(Intent intentData, String strData){
+//        if(strData == null){
+//            Toast noDataAlarm = Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG);
+//            return;
+//        }
+//        else{
+//            registerForActivityResult(
+//                new ActivityResultContracts.StartActivityForResult(),
+//                result -> {
+//                    if(result.getResultCode() == RESULT_OK) {
+//                        try {
+//                            ParcelFileDescriptor pfd = MainActivity.this.getContentResolver().
+//                                    openFileDescriptor(result.getData().getData(), "w");
+//                            FileOutputStream fileOutputStream =
+//                                    new FileOutputStream(pfd.getFileDescriptor());
+//                            fileOutputStream.write(strData.getBytes());
+//                            fileOutputStream.close();
+//                            pfd.close();
+//                        } catch (FileNotFoundException e) {
+//                            e.printStackTrace();
+//                        } catch (IOException e) {
+//                            e.printStackTrace();
+//                        }
+//                    }
+//                    if(result.getResultCode() == RESULT_CANCELED){
+//                    }
+//                }
+//            ).launch(intentData);
+//        }
+//    }
+//
+//    private void mStartForResultCali(Intent intentCali, String strCali){
+//        if(strCali == null){
+//            Toast noDataAlarm = Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG);
+//            return;
+//        }
+//        else{
+//            registerForActivityResult(
+//                    new ActivityResultContracts.StartActivityForResult(),
+//                    result -> {
+//                        if(result.getResultCode() == RESULT_OK) {
+//                            try {
+//                                ParcelFileDescriptor pfd = MainActivity.this.getContentResolver().
+//                                        openFileDescriptor(result.getData().getData(), "w");
+//                                FileOutputStream fileOutputStream =
+//                                        new FileOutputStream(pfd.getFileDescriptor());
+//                                fileOutputStream.write(strCali.getBytes());
+//                                fileOutputStream.close();
+//                                pfd.close();
+//                            } catch (FileNotFoundException e) {
+//                                e.printStackTrace();
+//                            } catch (IOException e) {
+//                                e.printStackTrace();
+//                            }
+//                        }
+//                        if(result.getResultCode() == RESULT_CANCELED){
+//                        }
+//                    }
+//            ).launch(intentCali);
+//        }
+//    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -166,30 +163,76 @@ public class MainActivity extends AppCompatActivity {
         Button btnDataCollect = findViewById(R.id.button1);
         Button btnCalibrate = findViewById(R.id.button2);
 
-        if(this.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED){
-            ActivityResultLauncher<String> permissionLauncher = this.registerForActivityResult(new ActivityResultContracts.RequestPermission(), (isGranted) -> {
-                if (!isGranted) {
-                    new AlertDialog.Builder(this.getApplicationContext())
-                            .setTitle("저장소 접근 권한")
-                            .setMessage("앱을 사용하시려면, 저장소 권한을 허용해 주세요.")
-                            .setPositiveButton("확인", (DialogInterface dialog, int which)->{
-                                        Intent intentAuth = new Intent();
-                                        intentAuth.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                                        Uri uri = Uri.fromParts("package",
-                                                BuildConfig.APPLICATION_ID, null);
-                                        intentAuth.setData(uri);
-                                        intentAuth.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                                        this.startActivity(intentAuth);
-                                    }
-                            )
-                            .create()
-                            .show();
+//        if(this.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED){
+//            ActivityResultLauncher<String> permissionLauncher = this.registerForActivityResult(new ActivityResultContracts.RequestPermission(), (isGranted) -> {
+//                if (!isGranted) {
+//                    new AlertDialog.Builder(this.getApplicationContext())
+//                            .setTitle("저장소 접근 권한")
+//                            .setMessage("앱을 사용하시려면, 저장소 권한을 허용해 주세요.")
+//                            .setPositiveButton("확인", (DialogInterface dialog, int which)->{
+//                                        Intent intentAuth = new Intent();
+//                                        intentAuth.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+//                                        Uri uri = Uri.fromParts("package",
+//                                                BuildConfig.APPLICATION_ID, null);
+//                                        intentAuth.setData(uri);
+//                                        intentAuth.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//                                        this.startActivity(intentAuth);
+//                                    }
+//                            )
+//                            .create()
+//                            .show();
+//                }
+//            });
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+//                permissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+//            }
+//        }
+
+        mStartForResultData = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if(result.getResultCode() == RESULT_OK) {
+                    try {
+                        ParcelFileDescriptor pfd = MainActivity.this.getContentResolver().
+                                openFileDescriptor(result.getData().getData(), "w");
+                        FileOutputStream fileOutputStream =
+                                new FileOutputStream(pfd.getFileDescriptor());
+                        fileOutputStream.write(sensorHelper.getBreathData().getBytes());
+                        fileOutputStream.close();
+                        pfd.close();
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
-            });
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                permissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+                if(result.getResultCode() == RESULT_CANCELED){
+                }
             }
-        }
+        );
+
+        mStartForResultCali = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if(result.getResultCode() == RESULT_OK) {
+                    try {
+                        ParcelFileDescriptor pfd = MainActivity.this.getContentResolver().
+                                openFileDescriptor(result.getData().getData(), "w");
+                        FileOutputStream fileOutputStream =
+                                new FileOutputStream(pfd.getFileDescriptor());
+                        fileOutputStream.write(sensorHelper.getCaliData().toString().getBytes());
+                        fileOutputStream.close();
+                        pfd.close();
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                if(result.getResultCode() == RESULT_CANCELED){
+                }
+            }
+        );
 
         Intent intentData = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intentData.addCategory(Intent.CATEGORY_OPENABLE).setType("text/csv");
@@ -199,7 +242,7 @@ public class MainActivity extends AppCompatActivity {
         Intent intentCali = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intentCali.addCategory(Intent.CATEGORY_OPENABLE).setType("text/csv");
         String fileNameCali = "Cali_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss")) + ".csv";
-        intentData.putExtra(Intent.EXTRA_TITLE, fileNameCali);
+        intentCali.putExtra(Intent.EXTRA_TITLE, fileNameCali);
 
 
         CountDownTimer countDownTimer = new CountDownTimer(60000, 1000) {
@@ -213,8 +256,12 @@ public class MainActivity extends AppCompatActivity {
                 btnDataCollect.setText("START COLLECTING DATA");
                 TextView time = findViewById(R.id.time);
                 time.setText("Collecting time: 60s");
-                String str = sensorHelper.getBreathData();
-                mStartForResultData(intentData, str);
+                if(sensorHelper.getBreathData() == null){
+                    Toast noDataAlarm = Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG);
+                }
+                else{
+                    mStartForResultData.launch(intentData);
+                }
             }
         };
 
@@ -229,8 +276,12 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     isDCEnd.setValue(true);
                     countDownTimer.cancel();
-                    String str = sensorHelper.getBreathData();
-                    mStartForResultData(intentData, str);
+                    if(sensorHelper.getBreathData() == null){
+                    Toast noDataAlarm = Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG);
+                    }
+                    else{
+                        mStartForResultData.launch(intentData);
+                    }
                 }
 
             }});
@@ -252,8 +303,15 @@ public class MainActivity extends AppCompatActivity {
                 if(caliState){
                     btnCalibrate.setSelected(false);
                     btnCalibrate.setText("START CALIBRATION");
-                    String str = sensorHelper.getCaliData().toString();
-                    mStartForResultCali(intentCali, str);
+                    if(sensorHelper.getCaliData() == null){
+                        Toast noDataAlarm = Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG);
+
+                        Log.d("CALIDATANULL", "CaliData = ");
+                    }
+                    else{
+                        Log.d("CALIDATANOTNULL", "CaliData = " + sensorHelper.getCaliData());
+//                        mStartForResultCali.launch(intentCali);
+                    }
                 }
                 else{
                     btnCalibrate.setSelected(true);
