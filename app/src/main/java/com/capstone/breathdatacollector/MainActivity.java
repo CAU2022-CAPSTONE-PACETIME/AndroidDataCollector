@@ -26,6 +26,7 @@ public class MainActivity extends AppCompatActivity {
 
     public static MutableLiveData<Boolean> isCaliEnd = new MutableLiveData<Boolean>(true);
     public static MutableLiveData<Boolean> isDCEnd = new MutableLiveData<Boolean>(true);
+    public static MutableLiveData<Boolean> isConvertEnd = new MutableLiveData<Boolean>(true);
 
     public boolean isOnCreateEnd;
 
@@ -258,13 +259,19 @@ public class MainActivity extends AppCompatActivity {
             }
             public void onFinish() {
                 isDCEnd.setValue(true);
-                btnDataCollect.setSelected(false);
-                btnDataCollect.setText("START COLLECTING DATA");
-                TextView time = findViewById(R.id.time);
-                time.setText("Collecting time: 60s");
+//                btnDataCollect.setSelected(false);
+//                btnDataCollect.setText("START COLLECTING DATA");
+//                TextView time = findViewById(R.id.time);
+//                time.setText("Collecting time: 60s");
 //                if(sensorHelper.getBreathData() == null){
 //                    Toast noDataAlarm = Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG);
 //                    noDataAlarm.show();
+    //                MainActivity.this.runOnUiThread(new Runnable() {
+    //                    @Override
+    //                    public void run() {
+    //                        Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG).show();
+    //                    }
+    //                });
 //                }
 //                else{
 //                    String fileNameData = "Data_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss")) + ".csv";
@@ -288,6 +295,12 @@ public class MainActivity extends AppCompatActivity {
 //                    if(sensorHelper.getBreathData() == null){
 //                        Toast noDataAlarm = Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG);
 //                        noDataAlarm.show();
+//                        MainActivity.this.runOnUiThread(new Runnable() {
+//                            @Override
+//                            public void run() {
+//                                Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG).show();
+//                            }
+//});
 //                    }
 //                    else{
 //                        String fileNameData = "Data_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss")) + ".csv";
@@ -309,6 +322,48 @@ public class MainActivity extends AppCompatActivity {
                 }
             }});
 
+        isDCEnd.observe(this, new Observer<Boolean>() {
+            public void onChanged(Boolean DCState){
+                btnCalibrate.setEnabled(DCState);
+                if(DCState){
+                    btnDataCollect.setSelected(false);
+                    btnDataCollect.setText("START COLLECTING DATA");
+                    TextView time = findViewById(R.id.time);
+                    time.setText("Collecting time: 60s");
+
+                    while(sensorHelper.isDCStart && !sensorHelper.isDCEnd);
+
+                    if(sensorHelper.getBreathData() == null){
+                        Log.d("CHECKBOOL", "isOnCreated = " + String.valueOf(isOnCreateEnd));
+                        if(isOnCreateEnd){
+
+                            MainActivity.this.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG).show();
+                                }
+                            });
+//
+//                            Toast noDataAlarm = Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG);
+//                            noDataAlarm.show();
+
+//                            Log.d("CALIDATANULL", "CaliData = ");
+                        }
+                        isOnCreateEnd = true;
+                    }
+                    else{
+                        String fileNameData = "Data_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss")) + ".csv";
+                        intentData.putExtra(Intent.EXTRA_TITLE, fileNameData);
+                        mStartForResultData.launch(intentData);
+                    } //여기 if~else 총 9줄이 3
+                }
+                else{
+                    btnDataCollect.setSelected(true);
+                    btnDataCollect.setText("STOP COLLECTING");
+                }
+            }
+        });
+
         isCaliEnd.observe(this, new Observer<Boolean>() {
             public void onChanged(Boolean caliState){
                 btnDataCollect.setEnabled(caliState);
@@ -319,8 +374,14 @@ public class MainActivity extends AppCompatActivity {
                         Log.d("CHECKBOOL", "isOnCreated = " + String.valueOf(isOnCreateEnd));
                         if(isOnCreateEnd){
 
-                            Toast noDataAlarm = Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG);
-                            noDataAlarm.show();
+                            MainActivity.this.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG).show();
+                                }
+                            });
+//                            Toast noDataAlarm = Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG);
+//                            noDataAlarm.show();
 
 //                            Log.d("CALIDATANULL", "CaliData = ");
                         }
@@ -338,38 +399,11 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
-        isDCEnd.observe(this, new Observer<Boolean>() {
-            public void onChanged(Boolean DCState){
-                btnCalibrate.setEnabled(DCState);
-                if(DCState){
-                    btnDataCollect.setSelected(false);
-                    btnDataCollect.setText("START COLLECTING DATA");
-                    TextView time = findViewById(R.id.time);
-                    time.setText("Collecting time: 60s");
 
-                    while(sensorHelper.isDCStart && !sensorHelper.isDCEnd);
+        isConvertEnd.observe(this, new Observer<Boolean>() {
+            @Override
+            public void onChanged(Boolean convertState) {
 
-                    if(sensorHelper.getBreathData() == null){
-                        Log.d("CHECKBOOL", "isOnCreated = " + String.valueOf(isOnCreateEnd));
-                        if(isOnCreateEnd){
-
-                            Toast noDataAlarm = Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG);
-                            noDataAlarm.show();
-
-//                            Log.d("CALIDATANULL", "CaliData = ");
-                        }
-                        isOnCreateEnd = true;
-                    }
-                    else{
-                        String fileNameData = "Data_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss")) + ".csv";
-                        intentData.putExtra(Intent.EXTRA_TITLE, fileNameData);
-                        mStartForResultData.launch(intentData);
-                    } //여기 if~else 총 9줄이 3
-                }
-                else{
-                    btnDataCollect.setSelected(true);
-                    btnDataCollect.setText("STOP COLLECTING");
-                }
             }
         });
     }
