@@ -339,6 +339,9 @@ public class MainActivity extends AppCompatActivity {
                     btnDataCollect.setText("START COLLECTING DATA");
                     TextView time = findViewById(R.id.time);
                     time.setText("Collecting time: 60s");
+
+                    while(sensorHelper.isDCStart && !sensorHelper.isDCEnd);
+
                     if(sensorHelper.getBreathData() == null){
                         Toast noDataAlarm = Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG);
                         noDataAlarm.show();
