@@ -248,7 +248,13 @@ public class MainActivity extends AppCompatActivity {
         CountDownTimer countDownTimer = new CountDownTimer(10000, 1000) {
             public void onTick(long millisUntilFinished) {
                 TextView time = findViewById(R.id.time);
-                time.setText("seconds remaining: " +(millisUntilFinished / 1000));
+                if(millisUntilFinished <= 10200){
+//                    time.setText("collect after " +((millisUntilFinished - 10000) / 1000) + "s");
+//                    if(millisUntilFinished >= 9800){
+//                        sensorHelper.doCollectData();
+//                    }
+                    time.setText("seconds remaining: " +((millisUntilFinished) / 1000));
+                }
             }
             public void onFinish() {
                 isDCEnd.setValue(true);
