@@ -63,6 +63,10 @@ public class SensorHelper implements SensorEventListener {
 
     private AudioManager audioManager;
 
+    public boolean isDCEnd = false;
+    public boolean isDCStart = false;
+
+
     public SensorHelper(MainActivity activity) {
         this.activity = activity;
         this.context = activity.getApplicationContext();
@@ -158,7 +162,7 @@ public class SensorHelper implements SensorEventListener {
             Log.d(TAG, "Start Bluetooth SCO");
             audioManager.startBluetoothSco();
 
-            bufferRecordSize = AudioRecord.getMinBufferSize(AUDIO_SAMP_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
+            bufferRecordSize = AudioRecord.getMinBufferSize(AUDIO_SAMP_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_FLOAT);
             bufferRecord = new short[bufferRecordSize];
 
             audioSensor = new AudioRecord(MediaRecorder.AudioSource.MIC,
@@ -195,9 +199,10 @@ public class SensorHelper implements SensorEventListener {
         }
 
         Thread dataThread = new Thread(() -> {
+            isDCStart = true;
             sensorManager.registerListener(this, accSensor, 5000);
             sensorManager.registerListener(this, gyroSensor, 5000);
-
+            isDCEnd = false;
             long end = 0;
             long start = System.currentTimeMillis();
             while(Boolean.FALSE.equals(MainActivity.isDCEnd.getValue())){
@@ -211,6 +216,8 @@ public class SensorHelper implements SensorEventListener {
             stopMic();
 
             makeBreathData(start, end);
+            isDCEnd = true;
+            isDCStart = false;
         });
         dataThread.start();
     }
@@ -221,7 +228,7 @@ public class SensorHelper implements SensorEventListener {
             return null;
         }
 
-        Log.i(TAG, "BreathData: " + breathData);
+//        Log.i(TAG, "BreathData: " + breathData);
 
         return breathData.toString();
     }
@@ -433,6 +440,7 @@ public class SensorHelper implements SensorEventListener {
                 break;
             }
             soundData.add(s);
+            cnt++;
         }
 
         breathData = new BreathData(
