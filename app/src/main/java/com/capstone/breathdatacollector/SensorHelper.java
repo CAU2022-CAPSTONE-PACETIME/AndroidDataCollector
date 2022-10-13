@@ -199,6 +199,7 @@ public class SensorHelper implements SensorEventListener {
         }
 
         Thread dataThread = new Thread(() -> {
+            MainActivity.isConvertEnd.postValue(false);
             isDCStart = true;
             sensorManager.registerListener(this, accSensor, 5000);
             sensorManager.registerListener(this, gyroSensor, 5000);
@@ -216,6 +217,8 @@ public class SensorHelper implements SensorEventListener {
             stopMic();
 
             makeBreathData(start, end);
+
+            MainActivity.isConvertEnd.postValue(true);
         });
         dataThread.start();
     }
