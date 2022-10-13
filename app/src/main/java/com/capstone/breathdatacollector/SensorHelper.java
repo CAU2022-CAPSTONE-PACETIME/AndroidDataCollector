@@ -216,8 +216,6 @@ public class SensorHelper implements SensorEventListener {
             stopMic();
 
             makeBreathData(start, end);
-            isDCEnd = true;
-            isDCStart = false;
         });
         dataThread.start();
     }
@@ -449,6 +447,10 @@ public class SensorHelper implements SensorEventListener {
                 , soundData
                 ,imuTimeStamp.subList(imuStartTimeIdx, imuTimeStamp.size()-1)
                 );
+
+        isDCEnd = true;
+        isDCStart = false;
+        Log.d(TAG, "RECORD Finished, Convert Finished");
     }
 
     static class BreathData{
