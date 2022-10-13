@@ -199,6 +199,7 @@ public class SensorHelper implements SensorEventListener {
         }
 
         Thread dataThread = new Thread(() -> {
+            MainActivity.isConvertEnd.postValue(false);
             isDCStart = true;
             sensorManager.registerListener(this, accSensor, 5000);
             sensorManager.registerListener(this, gyroSensor, 5000);
@@ -216,8 +217,8 @@ public class SensorHelper implements SensorEventListener {
             stopMic();
 
             makeBreathData(start, end);
-            isDCEnd = true;
-            isDCStart = false;
+
+            MainActivity.isConvertEnd.postValue(true);
         });
         dataThread.start();
     }
@@ -449,6 +450,10 @@ public class SensorHelper implements SensorEventListener {
                 , soundData
                 ,imuTimeStamp.subList(imuStartTimeIdx, imuTimeStamp.size()-1)
                 );
+
+        isDCEnd = true;
+        isDCStart = false;
+        Log.d(TAG, "RECORD Finished, Convert Finished");
     }
 
     static class BreathData{
