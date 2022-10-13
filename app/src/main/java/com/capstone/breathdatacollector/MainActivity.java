@@ -102,15 +102,15 @@ public class MainActivity extends AppCompatActivity {
 
             public void onTick(long millisUntilFinished) {
                 TextView time = findViewById(R.id.time);
-//                if(millisUntilFinished >= 10200){
-//                    time.setText("collect after " +((millisUntilFinished - 10000) / 1000) + "s");
-//                }
-//                else {
-//                    if(millisUntilFinished >= 9800){
-//                        sensorHelper.doCollectData();
-//                    }
+                if(millisUntilFinished >= 10200){
+                    time.setText("collect after " +((millisUntilFinished - 10000) / 1000) + "s");
+                }
+                else {
+                    if(millisUntilFinished >= 9800){
+                        sensorHelper.doCollectData();
+                    }
                     time.setText("seconds remaining: " + ((millisUntilFinished) / 1000));
-//                }
+                }
             }
 
             public void onFinish() {
@@ -142,7 +142,7 @@ public class MainActivity extends AppCompatActivity {
 
                 if (isDCEnd.getValue()) {
                     isDCEnd.setValue(false);
-                    sensorHelper.doCollectData(); //onTick에 docollectdata 넣을거면 이건 주석처리해야함.
+//                    sensorHelper.doCollectData(); //onTick에 docollectdata 넣을거면 이건 주석처리해야함.
                     countDownTimer.start();
                 }
                 else {
