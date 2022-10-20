@@ -102,11 +102,11 @@ public class MainActivity extends AppCompatActivity {
 
             public void onTick(long millisUntilFinished) {
                 TextView time = findViewById(R.id.time);
-                if(millisUntilFinished >= 10200){
-                    time.setText("collect after " +((millisUntilFinished - 10000) / 1000) + "s");
+                if(millisUntilFinished >= 60200){
+                    time.setText("collect after " +((millisUntilFinished - 60000) / 1000) + "s");
                 }
                 else {
-                    if(millisUntilFinished >= 9800){
+                    if(millisUntilFinished >= 59800){
                         sensorHelper.doCollectData();
                     }
                     time.setText("seconds remaining: " + ((millisUntilFinished) / 1000));
