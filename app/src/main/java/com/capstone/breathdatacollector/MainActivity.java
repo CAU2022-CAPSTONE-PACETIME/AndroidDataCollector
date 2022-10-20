@@ -98,15 +98,15 @@ public class MainActivity extends AppCompatActivity {
         intentCali = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intentCali.addCategory(Intent.CATEGORY_OPENABLE).setType("text/csv");
 
-        CountDownTimer countDownTimer = new CountDownTimer(13000, 1000) {
+        CountDownTimer countDownTimer = new CountDownTimer(63000, 1000) {
 
             public void onTick(long millisUntilFinished) {
                 TextView time = findViewById(R.id.time);
-                if(millisUntilFinished >= 10200){
-                    time.setText("collect after " +((millisUntilFinished - 10000) / 1000) + "s");
+                if(millisUntilFinished >= 60200){
+                    time.setText("collect after " +((millisUntilFinished - 60000) / 1000) + "s");
                 }
                 else {
-                    if(millisUntilFinished >= 9800){
+                    if(millisUntilFinished >= 59800){
                         sensorHelper.doCollectData();
                     }
                     time.setText("seconds remaining: " + ((millisUntilFinished) / 1000));
@@ -115,23 +115,6 @@ public class MainActivity extends AppCompatActivity {
 
             public void onFinish() {
                 isDCEnd.setValue(true);
-//                btnDataCollect.setSelected(false);
-//                btnDataCollect.setText("START COLLECTING DATA");
-//                TextView time = findViewById(R.id.time);
-//                time.setText("Collecting time: 60s");
-//                if (sensorHelper.getBreathData() == null) {
-//                    Log.d("NULLDATA", "Data collecting failed");
-//                    MainActivity.this.runOnUiThread(new Runnable() {
-//                        @Override
-//                        public void run() {
-//                            Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG).show();
-//                        }
-//                    });
-//                } else {
-//                    String fileNameData = "Data_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss")) + ".csv";
-//                    intentData.putExtra(Intent.EXTRA_TITLE, fileNameData);
-//                    mStartForResultData.launch(intentData);
-//                } //1, 2 주석 지우고 3 (if,else) 주석 넣어봐,   여기가 1
             }
         };
 
@@ -142,26 +125,11 @@ public class MainActivity extends AppCompatActivity {
 
                 if (isDCEnd.getValue()) {
                     isDCEnd.setValue(false);
-//                    sensorHelper.doCollectData(); //onTick에 docollectdata 넣을거면 이건 주석처리해야함.
                     countDownTimer.start();
                 }
                 else {
                     isDCEnd.setValue(true);
                     countDownTimer.cancel();
-
-//                    if (sensorHelper.getBreathData() == null) {
-//                        MainActivity.this.runOnUiThread(new Runnable() {
-//                            @Override
-//                            public void run() {
-//                                Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG).show();
-//                            }
-//                        });
-//                    }
-//                    else {
-//                        String fileNameData = "Data_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss")) + ".csv";
-//                        intentData.putExtra(Intent.EXTRA_TITLE, fileNameData);
-//                        mStartForResultData.launch(intentData);
-//                    } // 여기가 2
                 }
             }
         });
@@ -187,29 +155,6 @@ public class MainActivity extends AppCompatActivity {
                     btnDataCollect.setText("START COLLECTING DATA");
                     TextView time = findViewById(R.id.time);
                     time.setText("Collecting time: 60s");
-
-//                    Log.d("DCENDCHECK", "isDCEnd = " + String.valueOf(DCState));
-//                    Log.d("SDCSTARTCHECK", "sH.isDCStart = " + String.valueOf(sensorHelper.isDCStart));
-//                    Log.d("SDCENDCHECK", "sH.isDCEnd = " + String.valueOf(sensorHelper.isDCEnd));
-
-
-//                    if(sensorHelper.getBreathData() == null){
-////                        Log.d("CHECKBOOL", "isOnCreated = " + String.valueOf(isOnCreateEnd));
-//                        Log.d("NULLDATA", "Data collecting failed");
-//                        if(isOnCreateEnd){
-//                            MainActivity.this.runOnUiThread(new Runnable() {
-//                                @Override
-//                                public void run() {
-//                                    Toast.makeText(MainActivity.this, "데이터가 수집되지 않았습니다.", Toast.LENGTH_LONG).show();
-//                                }
-//                            });
-//                        }
-//                    }
-//                    else{
-//                        String fileNameData = "Data_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm_ss")) + ".csv";
-//                        intentData.putExtra(Intent.EXTRA_TITLE, fileNameData);
-//                        mStartForResultData.launch(intentData);
-//                    } //여기 if~else 총 9줄이 3
                 }
                 else {
                     btnDataCollect.setSelected(true);
