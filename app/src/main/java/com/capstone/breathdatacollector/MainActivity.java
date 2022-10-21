@@ -154,7 +154,7 @@ public class MainActivity extends AppCompatActivity {
                     btnDataCollect.setSelected(false);
                     btnDataCollect.setText("START COLLECTING DATA");
                     TextView time = findViewById(R.id.time);
-                    time.setText("Collecting time: 60s");
+                    time.setText("Collecting time: 30s");
                 }
                 else {
                     btnDataCollect.setSelected(true);
