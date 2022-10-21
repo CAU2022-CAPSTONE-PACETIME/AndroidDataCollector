@@ -98,15 +98,15 @@ public class MainActivity extends AppCompatActivity {
         intentCali = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intentCali.addCategory(Intent.CATEGORY_OPENABLE).setType("text/csv");
 
-        CountDownTimer countDownTimer = new CountDownTimer(63000, 1000) {
+        CountDownTimer countDownTimer = new CountDownTimer(33000, 1000) {
 
             public void onTick(long millisUntilFinished) {
                 TextView time = findViewById(R.id.time);
-                if(millisUntilFinished >= 60200){
-                    time.setText("collect after " +((millisUntilFinished - 60000) / 1000) + "s");
+                if(millisUntilFinished >= 30200){
+                    time.setText("collect after " +((millisUntilFinished - 30000) / 1000) + "s");
                 }
                 else {
-                    if(millisUntilFinished >= 59800){
+                    if(millisUntilFinished >= 29800){
                         sensorHelper.doCollectData();
                     }
                     time.setText("seconds remaining: " + ((millisUntilFinished) / 1000));
