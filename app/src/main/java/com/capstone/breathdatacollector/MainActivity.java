@@ -4,6 +4,8 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.ParcelFileDescriptor;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -42,6 +44,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         SensorHelper sensorHelper = new SensorHelper(MainActivity.this);
+        Vibrator vibrator = (Vibrator)getSystemService(VIBRATOR_SERVICE);
 
         Button btnDataCollect = findViewById(R.id.button1);
         Button btnCalibrate = findViewById(R.id.button2);
@@ -115,6 +118,7 @@ public class MainActivity extends AppCompatActivity {
 
             public void onFinish() {
                 isDCEnd.setValue(true);
+                vibrator.vibrate(VibrationEffect.createOneShot(500, 50));
             }
         };
 
