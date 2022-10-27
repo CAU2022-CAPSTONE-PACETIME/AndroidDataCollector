@@ -201,7 +201,7 @@ public class SensorHelper implements SensorEventListener {
         Thread dataThread = new Thread(() -> {
             MainActivity.isConvertEnd.postValue(false);
             isDCStart = true;
-            sensorManager.registerListener(this, accSensor, 5000);
+            sensorManager.registerListener(this, accSensor, 5000); // 5000 microseconds == 5 milli seconds
             sensorManager.registerListener(this, gyroSensor, 5000);
             isDCEnd = false;
             long end = 0;
@@ -411,7 +411,11 @@ public class SensorHelper implements SensorEventListener {
     }
 
     private void makeBreathData(long soundStartTime, long soundEndTime){
+        // 캘리브레이션 적용
         final long imuStartTime = soundStartTime - caliData.getPpDelay();
+
+        // 초 단위로 바꾸어 데이터를 잘라 낼거임.
+        final int timeInSec = (int)((soundEndTime - soundStartTime)/1000);
 
         Log.i(TAG, "SOUND: " + shortBuffer.position());
         Log.i(TAG, "ACC: " + accData.size());
@@ -419,6 +423,7 @@ public class SensorHelper implements SensorEventListener {
 
         long minDiff = 1000000000;
         long val = imuTimeStamp.get(0);
+        // 시간의 차이가 가장 적은 부분을 찾음
         for(long t : imuTimeStamp){
             // find start imu idx
             if(abs(t - imuStartTime) < minDiff){
@@ -427,17 +432,22 @@ public class SensorHelper implements SensorEventListener {
             }
         }
 
+        // 가장 차이가 적은 부분을 시작 인덱스로 설정.
         int imuStartTimeIdx = imuTimeStamp.indexOf(val);
 
-        long endTimeDiff = soundEndTime - imuTimeStamp.get(imuTimeStamp.size()-1);
+        int imuReceiveTimeInMilliSecond = 5 * (imuTimeStamp.size() - imuStartTimeIdx);
 
-        long minusCnt = endTimeDiff * 441L / 10L;
+        int soundCount = (441 * imuReceiveTimeInMilliSecond) / 10;
+
+        // 끝나는 시간의 차이
+//        long endTimeDiff = soundEndTime - imuTimeStamp.get(imuTimeStamp.size()-1);
+//        long minusCnt = endTimeDiff * 441L / 10L;
 
         List<Short> soundData = new ArrayList<>();
 
         int cnt = 0;
         for(short s : shortBuffer.array()){
-            if(cnt >= shortBuffer.position() - minusCnt){
+            if(cnt >= soundCount){
                 break;
             }
             soundData.add(s);
